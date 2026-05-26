@@ -1,0 +1,17 @@
+# Build folders
+build/
+bin/
+out/
+secret/
+test/
+
+# Object files
+*.o
+*.obj
+*.so
+*.a
+*.out
+
+# IDE
+.vscode/
+.idea/
