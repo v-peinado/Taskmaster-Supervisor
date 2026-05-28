@@ -75,3 +75,59 @@ Inicio del proyecto. Subject leído completo (v3.1). Decidiendo que plan seguir,
 Inicialmente se pensó en una clase Program que agrupara la configuración y los N procesos hijo de una entrada de config con numprocs > 1.
 Pero cada proceso tendra su pid y su propio estado, parece mas sencillo tratarlo como programas diferentes cada uno con su instancia Program
 
+### 2026-05-27
+
+Diseño de arquitectura inicial.
+
+**Decisiones tomadas**
+
+El programa recibe la ruta al config file como argumento. El `main` hace
+lo mínimo: crear el logger, construir `Taskmaster` e invocar `init()` y
+`run()`. Todo el ciclo de vida del sistema vive dentro del orquestador.
+
+El logger se crea antes que cualquier otra cosa para capturar fallos
+desde el primer momento, incluyendo errores de parseo o inicialización.
+
+`Taskmaster` recibe en su `Config` solo `config_file`. El log file no
+es su responsabilidad, el logger ya está construido cuando se crea.
+
+`init()` construye todo lo necesario: parser, programs, shell. `run()`
+arranca el bucle principal. Si `init()` falla, `run()` no se llama.
+
+`Parser` y `Shell` son miembros directos de `Taskmaster`, no punteros.
+No se prevé que cambien de tamaño ni necesitan polimorfismo. El vector
+de `Program` es `std::vector<Program>`, la STL gestiona su heap.
+
+`Shell` encapsula toda la lógica de readline, historial y parseo de
+comandos. Se estudia separar la lógica de comandos en una clase propia,
+`Taskmaster` no debería contener lógica de comandos directamente.
+
+Pendiente:
+- Implementar `Taskmaster`, `Parser`, `Shell` y `Program`
+- Diseñar la gestión de procesos: multiplexación de salidas (poll vs epoll),
+  señales y comprobación de vida, posiblemente todo en un mismo módulo
+- Estudiar si la lógica de señales merece clase propia o vive junto
+  a la gestión de procesos
+- Comportamiento exacto del reload parcial con SIGHUP
+
+### 2026-05-28
+
+**Decisiones de diseño — config y arranque**
+
+Se estudia crear una clase `ProgramConfig` que represente la configuración
+de un programa tal como viene del YAML. El parser devolvería un
+`std::vector<ProgramConfig>` a `Taskmaster`.
+
+De esta forma `Program` recibe su `ProgramConfig` ya construida y no
+sabe nada de YAML ni de parseo.
+
+Se estudia separar la gestión de procesos en un `ProcessManager` único
+que recibe y gestiona un `std::vector<Program>`. Se encarga de todo lo
+relacionado con el sistema operativo: fork/exec, waitpid(WNOHANG) y
+multiplexado de salidas con poll/epoll. `Program` solo representa estado
+y configuración, no sabe cómo se lanza ni cómo se monitoriza.
+
+Pendiente decidir comportamiento ante fallo en el arranque:
+- Si un programa falla al arrancar ¿se arrancan los demás igualmente?
+- ¿Se loggea el fallo y se continúa o se aborta todo?
+- Estudiar cómo lo resuelve supervisor como referencia
