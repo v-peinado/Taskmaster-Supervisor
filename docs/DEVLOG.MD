@@ -131,3 +131,11 @@ Pendiente decidir comportamiento ante fallo en el arranque:
 - Si un programa falla al arrancar ¿se arrancan los demás igualmente?
 - ¿Se loggea el fallo y se continúa o se aborta todo?
 - Estudiar cómo lo resuelve supervisor como referencia
+
+
+### 2026-05-28
+
+Añadido Makefile inicial y Logger portado de otro proyecto anterior.
+El logger necesitará revisión y posible adaptación a las necesidades
+de Taskmaster. Pendiente revisar thread safety si se usa en contextos
+multihilo.
