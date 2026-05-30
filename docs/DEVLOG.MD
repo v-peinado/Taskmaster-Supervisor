@@ -62,7 +62,6 @@ Pendiente investigar:
 - Comportamiento exacto del reload parcial
 
 
-
 ### 2026-05-26
 
 Inicio del proyecto. Subject leído completo (v3.1). Decidiendo que plan seguir, primer borradosr de clases y estrategia que se llevara, fases del proyecto y viabilidad de incluir algun bonusd.
@@ -81,9 +80,7 @@ Diseño de arquitectura inicial.
 
 **Decisiones tomadas**
 
-El programa recibe la ruta al config file como argumento. El `main` hace
-lo mínimo: crear el logger, construir `Taskmaster` e invocar `init()` y
-`run()`. Todo el ciclo de vida del sistema vive dentro del orquestador.
+El programa recibe la ruta al config file como argumento. El `main` hace lo mínimo: crear el logger, construir `Taskmaster` e invocar `init()` y `run()`. Todo el ciclo de vida del sistema vive dentro del orquestador.
 
 El logger se crea antes que cualquier otra cosa para capturar fallos
 desde el primer momento, incluyendo errores de parseo o inicialización.
@@ -139,3 +136,59 @@ Añadido Makefile inicial y Logger portado de otro proyecto anterior.
 El logger necesitará revisión y posible adaptación a las necesidades
 de Taskmaster. Pendiente revisar thread safety si se usa en contextos
 multihilo.
+
+### 2026-05-30
+
+Este sera el plan a seguir.
+main crea el logger y el Taskmaster. init() construye el parser,
+la shell y el ProcessManager. El ProcessManager crea los Program
+a partir de los ProgramConfig pero no los arranca todavía.
+
+El arranque lo ejecuta ProcessManager::startAutostart(), que hace
+fork/execve por cada programa con autostart activo y guarda el PID
+y estado RUNNING.
+
+El bucle principal combina Shell y ProcessManager. La Shell atiende
+los comandos del usuario: start, stop, restart, reload, status.
+El ProcessManager monitoriza con waitpid(WNOHANG) para detectar
+muertes, epoll para leer stdout/stderr, y relanza automáticamente
+los procesos que mueren si autorestart está activo.
+
+*** TASKMASTER - FLUJO SIMPLE ***
+
+main()
+│
+├── Logger (se crea primero)
+├── Taskmaster(logger, config_file)
+│
+└── init()
+        │
+        ├── Parser (temporal o futuro)
+        │       → vector<ProgramConfig>
+        │
+        ├── Shell (comandos usuario)
+        │
+        └── ProcessManager(configs, logger)
+                → crea Program (sin arrancar aún)
+
+
+*** ARRANQUE ***
+
+ProcessManager::startAutostart()
+    → fork()
+    → execve()
+    → guarda PID + estado RUNNING
+
+
+*** loop principal ***
+
+while(running)
+{
+    Shell:
+        start / stop / restart / reload / status
+
+    ProcessManager:
+        - waitpid(WNOHANG)  → detectar muertes
+        - epoll            → leer stdout/stderr
+        - si muere y autorestart → startProgram()
+}
