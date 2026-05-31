@@ -230,3 +230,28 @@ un vector de ProgramConfig que llenará el parser y he dejado declarado stop()
 para más adelante. El init() por ahora solo loggea, el config todavía no se valida.
 
 Pendiente: el parser que lea el YAML, validar el config y meterle mano a run() y stop().
+
+
+### 2026-06-01
+
+He fijado el patrón de las clases: "Config" en todas las configurables
+("Logger", "Taskmaster", "ProcessManager"), con todos los campos con un default,
+porque así si una clase crece añado campos sin romper ninguna llamada y de paso
+las llamadas quedan autodocumentadas. Lo veo versátil y escalable. La excepción
+es el "Parser": estoy seguro de que nunca va a escalar (su única entrada es el
+path del config), así que ese no usa "Config", el constructor toma el path
+directamente.
+
+En "Parser" El constructor solo guarda el path, no
+abre nada; el trabajo de verdad va en "load()", que es el punto de entrada y va
+llamando a funciones internas hasta devolver el vector de "ProgramConfig". 
+
+Le he dado vueltas a que el path queda en dos sitios ("m_config_file" en
+"Taskmaster" y "m_path" en el "Parser"). Pensé en quitar uno con un getter, pero
+eso acopla las clases solo para un log, así que lo dejo como está: es un dato de
+entrada inmutable, no estado mutable que haya que sincronizar, así que no es una
+duplicación que importe.
+
+He metido un "loadProgramsConf()" temporal que simula su salida: devuelve el vector de "ProgramConfig" ya relleno
+
+Pendiente: eempezar el "ProcessManager", qwue como deje en la anterioir entrada seria parte del "run()" de taskmaster

@@ -1,7 +1,7 @@
 #pragma once
 
 // #include "Shell.hpp"
-// #include "Parser.hpp"
+#include "Parser.hpp"
 #include "ProgramConfig.hpp"
 #include <iostream>
 #include <memory>
@@ -34,8 +34,8 @@ class Taskmaster {
 
         std::string m_config_file;
         Logger& m_logger;
-        //Parser m_parser;
+        Parser m_parser;
         //Shell m_shell;
         std::vector<ProgramConfig> m_programs_conf;
-        // std::vector<Program> m_programs;
+        //std::vector<Program> m_programs;
 };

@@ -8,7 +8,6 @@ struct ProgramConfig {
 
     std::string name;          // clave del YAML: "nginx"
     std::string cmd;           // "/usr/local/bin/nginx -c ..."  (se trocea al lanzar)
-    int         numprocs    = 1;
     int         umask       = -1;          // -1 = no tocar (ojo: parsear en octal)
     std::string workingdir;                // vacío = heredar
     bool        autostart   = true;
