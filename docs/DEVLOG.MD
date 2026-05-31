@@ -192,3 +192,11 @@ while(running)
         - epoll            → leer stdout/stderr
         - si muere y autorestart → startProgram()
 }
+
+
+
+### 2026-05-31
+
+Empezamos a implementar la clase Taskmaster, constructor, y prueba de compilacion con init(), que escribe un log de prueba, ninguna funcuionalidad mas.
+
+[31/05/2026-03:00:16] [ INFO ] - Application: Taskmaster is running

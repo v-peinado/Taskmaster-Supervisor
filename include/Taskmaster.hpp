@@ -16,7 +16,6 @@ class Taskmaster {
 
         struct Config {
             std::string config_file;
-            std::string log_file;
         };
 
         Taskmaster(const Config& cfg, Logger& logger);      // Add more param in future
