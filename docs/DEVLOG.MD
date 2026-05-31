@@ -22,14 +22,14 @@ Para llevar un buen registro historico intentaremos llevar una buena coherencia 
 - Logging de eventos a archivo local
 
 **Shell de control**
-- Comandos: `status`, `start`, `stop`, `restart`, `reload`, `exit`
+- Comandos: "status", "start", "stop", "restart", "reload", "exit"
 - Line editing e historial (readline o equivalente)
 
 **Configuración por programa**
-- `cmd`, `numprocs`, `autostart`, `autorestart` (always/never/unexpected)
-- `exitcodes`, `starttime`, `startretries`
-- `stopsignal`, `stoptime`
-- `stdout`, `stderr`, `env`, `workingdir`, `umask`
+- "cmd", "numprocs", "autostart", "autorestart" (always/never/unexpected)
+- "exitcodes", "starttime", "startretries"
+- "stopsignal", "stoptime"
+- "stdout", "stderr", "env", "workingdir", "umask"
 
 ## Posibles mejortas
 
@@ -80,27 +80,27 @@ Diseño de arquitectura inicial.
 
 **Decisiones tomadas**
 
-El programa recibe la ruta al config file como argumento. El `main` hace lo mínimo: crear el logger, construir `Taskmaster` e invocar `init()` y `run()`. Todo el ciclo de vida del sistema vive dentro del orquestador.
+El programa recibe la ruta al config file como argumento. El "main" hace lo mínimo: crear el logger, construir "Taskmaster" e invocar "init()" y "run()". Todo el ciclo de vida del sistema vive dentro del orquestador.
 
 El logger se crea antes que cualquier otra cosa para capturar fallos
 desde el primer momento, incluyendo errores de parseo o inicialización.
 
-`Taskmaster` recibe en su `Config` solo `config_file`. El log file no
+"Taskmaster" recibe en su "Config" solo "config_file". El log file no
 es su responsabilidad, el logger ya está construido cuando se crea.
 
-`init()` construye todo lo necesario: parser, programs, shell. `run()`
-arranca el bucle principal. Si `init()` falla, `run()` no se llama.
+"init()" construye todo lo necesario: parser, programs, shell. "run()"
+arranca el bucle principal. Si "init()" falla, "run()" no se llama.
 
-`Parser` y `Shell` son miembros directos de `Taskmaster`, no punteros.
+"Parser" y "Shell" son miembros directos de "Taskmaster", no punteros.
 No se prevé que cambien de tamaño ni necesitan polimorfismo. El vector
-de `Program` es `std::vector<Program>`, la STL gestiona su heap.
+de "Program" es "std::vector<Program>", la STL gestiona su heap.
 
-`Shell` encapsula toda la lógica de readline, historial y parseo de
+"Shell" encapsula toda la lógica de readline, historial y parseo de
 comandos. Se estudia separar la lógica de comandos en una clase propia,
-`Taskmaster` no debería contener lógica de comandos directamente.
+"Taskmaster" no debería contener lógica de comandos directamente.
 
 Pendiente:
-- Implementar `Taskmaster`, `Parser`, `Shell` y `Program`
+- Implementar "Taskmaster", "Parser", "Shell" y "Program"
 - Diseñar la gestión de procesos: multiplexación de salidas (poll vs epoll),
   señales y comprobación de vida, posiblemente todo en un mismo módulo
 - Estudiar si la lógica de señales merece clase propia o vive junto
@@ -111,17 +111,17 @@ Pendiente:
 
 **Decisiones de diseño — config y arranque**
 
-Se estudia crear una clase `ProgramConfig` que represente la configuración
+Se estudia crear una clase "ProgramConfig" que represente la configuración
 de un programa tal como viene del YAML. El parser devolvería un
-`std::vector<ProgramConfig>` a `Taskmaster`.
+"std::vector<ProgramConfig>" a "Taskmaster".
 
-De esta forma `Program` recibe su `ProgramConfig` ya construida y no
+De esta forma "Program" recibe su "ProgramConfig" ya construida y no
 sabe nada de YAML ni de parseo.
 
-Se estudia separar la gestión de procesos en un `ProcessManager` único
-que recibe y gestiona un `std::vector<Program>`. Se encarga de todo lo
+Se estudia separar la gestión de procesos en un "ProcessManager" único
+que recibe y gestiona un "std::vector<Program>". Se encarga de todo lo
 relacionado con el sistema operativo: fork/exec, waitpid(WNOHANG) y
-multiplexado de salidas con poll/epoll. `Program` solo representa estado
+multiplexado de salidas con poll/epoll. "Program" solo representa estado
 y configuración, no sabe cómo se lanza ni cómo se monitoriza.
 
 Pendiente decidir comportamiento ante fallo en el arranque:
@@ -140,7 +140,7 @@ multihilo.
 ### 2026-05-30
 
 Este sera el plan a seguir.
-main crea el logger y el Taskmaster. init() construye el parser,
+"main" crea el logger y el Taskmaster. init() construye el parser,
 la shell y el ProcessManager. El ProcessManager crea los Program
 a partir de los ProgramConfig pero no los arranca todavía.
 
@@ -197,6 +197,36 @@ while(running)
 
 ### 2026-05-31
 
-Empezamos a implementar la clase Taskmaster, constructor, y prueba de compilacion con init(), que escribe un log de prueba, ninguna funcuionalidad mas.
+Empezamos a implementar la clase "Taskmaster", constructor, y prueba de compilacion con init(), que escribe un log de prueba, ninguna funcuionalidad mas.
 
 [31/05/2026-03:00:16] [ INFO ] - Application: Taskmaster is running
+
+
+### 2026-05-31
+
+**ProgramConfig y arranque con config file**
+
+Añadida "ProgramConfig" (config de un programa del YAML) con tipos planos
+
+"main" recibe la ruta del config como argumento, crea el logger en "./logs/",
+construye "Taskmaster" y llama a "init()". "Taskmaster::Config" queda solo con
+"config_file"; guarda "m_programs_conf" (lo llenará el parser) y declara "stop()".
+"init()" por ahora solo loggea; el config aún no se valida.
+
+### 2026-05-31
+
+Hoy he añadido el "ProgramConfig", la estructura con la config de cada programa
+del YAML. Al final lo he dejado simple con tipos planos (int, bool, string......),
+sin enums ni optional ni chrono, que me estaba liando y sobreingenierizando.
+Toda la chicha de validar y traducir (umask en octal, autorestart y stopsignal
+como string, lo de vacío = descartar/heredar) la hago en el parser, no en el
+struct. He dejado el "name" porque el nombre del programa es la clave del mapa
+YAML y lo voy a necesitar para el status y para el reload.
+
+También he tocado el main y el Taskmaster. Ahora el main recibe la ruta del
+config como argumento, monta el logger en ./logs/, crea el Taskmaster y llama a
+init(). El Config del Taskmaster se queda solo con config_file. De momento guarda
+un vector de ProgramConfig que llenará el parser y he dejado declarado stop()
+para más adelante. El init() por ahora solo loggea, el config todavía no se valida.
+
+Pendiente: el parser que lea el YAML, validar el config y meterle mano a run() y stop().

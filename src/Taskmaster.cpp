@@ -11,4 +11,6 @@ Taskmaster::Taskmaster(const Config& cfg, Logger& logger)
 
 void Taskmaster::init(){
     m_logger.log(Logger::LogLevel::Info, "Taskmaster is running");
+    m_logger.log(Logger::LogLevel::Info, "The config file is " + m_config_file);
+    m_logger.log(Logger::LogLevel::Warning, "The conf file is not validated");
 }
