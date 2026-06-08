@@ -255,3 +255,16 @@ duplicación que importe.
 He metido un "loadProgramsConf()" temporal que simula su salida: devuelve el vector de "ProgramConfig" ya relleno
 
 Pendiente: eempezar el "ProcessManager", qwue como deje en la anterioir entrada seria parte del "run()" de taskmaster
+
+
+### 2026-06-02
+
+Creada e implementada la clase "Program": representa un proceso supervisado,
+guarda su "ProgramConfig" + el estado de runtime (pid, state, reintentos). No se
+lanza ni se monitoriza solo, eso es del "ProcessManager"; solo lleva su ficha.
+
+En vez de setters crudos uso transiciones (started, exited, stopped...): son
+setters pero agrupados por evento en vez de por campo, así el "Program" nunca
+queda a medias y nadie de fuera depende de cómo guardo el estado por dentro.
+Copia borrada (cada "Program" es un proceso único) pero move por defecto, que
+si no no entra en el vector del "ProcessManager".

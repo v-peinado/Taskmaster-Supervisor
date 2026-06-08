@@ -10,7 +10,7 @@ Parser::Parser(const std::string& path_file)
 
 // Parser - Public meth
 
-std::vector<ProgramConfig> loadProgramsConf() {
+std::vector<ProgramConfig> Parser::loadProgramsConf() {
     
     std::vector<ProgramConfig> programs;
 
@@ -49,6 +49,6 @@ std::vector<ProgramConfig> loadProgramsConf() {
         .stderr_file = "/tmp/greeter.stderr",
         .env         = { {"STARTED_BY", "taskmaster"}, {"ANSWER", "42"} },
     });
-
+    
     return programs;
 }

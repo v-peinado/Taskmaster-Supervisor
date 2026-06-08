@@ -3,13 +3,12 @@
 // #include "Shell.hpp"
 #include "Parser.hpp"
 #include "ProgramConfig.hpp"
+#include "Program.hpp"
 #include <iostream>
 #include <memory>
 #include <vector>
 
 class Logger;
-class Parser;
-class Shell;
 
 class Taskmaster {
     public:
@@ -36,6 +35,8 @@ class Taskmaster {
         Logger& m_logger;
         Parser m_parser;
         //Shell m_shell;
+        //ProcessManager m_proccess_manager;
         std::vector<ProgramConfig> m_programs_conf;
+        bool        m_running;
         //std::vector<Program> m_programs;
 };

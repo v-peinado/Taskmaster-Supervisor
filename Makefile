@@ -15,7 +15,7 @@ CFLAGS	=  -std=c++20 #-Wall -Wextra -Werror #-Wc++11-compat -Werror=c++11-compat
 RM		= rm -f
 
 #Includes
-INC			= -I ./include/  -I ./include/client/ -I ./include/server/ -I ./include/command/ -I ./include/channel/
+INC			= -I ./include/
 
 #Source files
 SRC_DIR	= src/
