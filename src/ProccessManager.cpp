@@ -24,3 +24,14 @@ void ProccessManager::startManager(const std::vector<ProgramConfig>& configs) {
 
 // private methods
 
+void ProccessManager::launch(Program& program) {
+    const ProgramConfig& cfg = program.getProgramConfig();
+   // std::vector<std::string> = splitCmd(cfg.cmd);
+}
+
+
+// aux
+
+void ProccessManager::splitCmd(const std::string& cmd) {
+
+}

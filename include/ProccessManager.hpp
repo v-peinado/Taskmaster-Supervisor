@@ -28,9 +28,11 @@ class ProccessManager {
         const std::string& status() const;
  
     private:
-
-        void launch(Program& program);   // fork/execve
         Logger&              m_logger;
-
         std::vector<Program> m_programs; 
+
+        void launch(Program& program);
+
+        // aux
+        void splitCmd(const std::string& cmd);
 };
