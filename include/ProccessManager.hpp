@@ -34,5 +34,5 @@ class ProccessManager {
         void launch(Program& program);
 
         // aux
-        void splitCmd(const std::string& cmd);
+        std::vector<std::string> splitCmd(const std::string& cmd);
 };

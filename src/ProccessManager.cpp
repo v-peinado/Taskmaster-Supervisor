@@ -1,5 +1,5 @@
 #include "ProccessManager.hpp"
-
+#include <sstream>
 
 // Constructors//destructors
 
@@ -26,12 +26,18 @@ void ProccessManager::startManager(const std::vector<ProgramConfig>& configs) {
 
 void ProccessManager::launch(Program& program) {
     const ProgramConfig& cfg = program.getProgramConfig();
-   // std::vector<std::string> = splitCmd(cfg.cmd);
+    std::vector<std::string> args = splitCmd(cfg.cmd);
+    
 }
 
 
 // aux
 
-void ProccessManager::splitCmd(const std::string& cmd) {
-
+std::vector<std::string> ProccessManager::splitCmd(const std::string& cmd) {
+    std::vector<std::string> args;
+    std::istringstream iss(cmd);
+    std::string temp;
+    while(iss >> temp)
+        args.push_back(temp);
+    return args;
 }
