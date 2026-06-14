@@ -3,6 +3,7 @@
 #include "Logger.hpp"
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 
 // Constructors//destructor
 
@@ -62,7 +63,11 @@ std::vector<std::string> ProccessManager::splitCmd(const std::string& cmd) {
 }
 
 void ProccessManager::setupChild(const ProgramConfig& cfg) {
-
+    setsid();
+    if (cfg.umask >= 0) {
+        mode_t mask = cfg.umask;
+        umask(mask);
+    }
 }
 
 void ProccessManager::execProgram(const std::vector<std::string>& args) {
