@@ -20,7 +20,7 @@ void ProccessManager::startManager(const std::vector<ProgramConfig>& configs) {
 
     for (auto& program : m_programs) {
         if (program.getProgramConfig().autostart) {
-            //launch(program);
+            launch(program);      
         }
     }
 }
@@ -42,13 +42,15 @@ void ProccessManager::launch(Program& program) {
         return;       
     }
     if(pid == 0) {
-        // setup chilkd and exec
+        // setup child and exec
+        setupChild(cfg);
+        execProgram(args);
     }
     program.started(pid);
 }
 
 
-// aux
+// launch aux
 
 std::vector<std::string> ProccessManager::splitCmd(const std::string& cmd) {
     std::vector<std::string> args;
@@ -57,4 +59,12 @@ std::vector<std::string> ProccessManager::splitCmd(const std::string& cmd) {
     while(iss >> temp)
         args.push_back(temp);
     return args;
+}
+
+void ProccessManager::setupChild(const ProgramConfig& cfg) {
+
+}
+
+void ProccessManager::execProgram(const std::vector<std::string>& args) {
+
 }

@@ -33,6 +33,8 @@ class ProccessManager {
 
         void launch(Program& program);
 
-        // aux
+        // launch aux
         std::vector<std::string> splitCmd(const std::string& cmd);
+        void setupChild(const ProgramConfig& cfg);
+        void execProgram(const std::vector<std::string>& args);
 };
