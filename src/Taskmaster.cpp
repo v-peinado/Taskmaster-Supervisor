@@ -9,7 +9,7 @@ Taskmaster::Taskmaster(const Config& cfg, Logger& logger)
     : m_config_file(cfg.config_file)
     , m_logger(logger)
     , m_parser(cfg.config_file)
-    //, m_proccess_manager(logger)
+    , m_proccess_manager(logger)
     {}
 
 // Logger - Public meths
@@ -20,7 +20,7 @@ void Taskmaster::init(){
     m_logger.log(Logger::LogLevel::Warning, "The conf file is not validated");
     std::vector<ProgramConfig> programs_to_exec = m_parser.loadProgramsConf();
     // ProcessManager , crear los programas a partir de programs to exec
-    // m_process_manager.start(programs_to_exec); llamamos al metodo de proccess para empezar a crear los programanas
+    m_proccess_manager.startManager(programs_to_exec);// llamamos al metodo de proccess para empezar a crear los programanas
 }
 
 void Taskmaster::run() {

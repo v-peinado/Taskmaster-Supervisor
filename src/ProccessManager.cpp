@@ -69,25 +69,39 @@ void ProccessManager::setupChild(const ProgramConfig& cfg) {
         mode_t mask = cfg.umask;
         umask(mask);
     }
-    if (!cfg.workingdir.empty())
-        if (chdir(cfg.workingdir.c_str()) != 0)
+    if (!cfg.workingdir.empty()) {
+        if (chdir(cfg.workingdir.c_str()) != 0) {
+            perror("chdir");
             _exit(127);
-
+        }
+    }
     // el "empty -> /dev/null" es temporal hasta que este el parser creado
     const char* out = cfg.stdout_file.empty() ? "/dev/null" : cfg.stdout_file.c_str();
     const char* err = cfg.stderr_file.empty() ? "/dev/null" : cfg.stderr_file.c_str();
 
     int file_output = open(out, O_WRONLY | O_CREAT | O_APPEND, 0644);
     int file_error  = open(err, O_WRONLY | O_CREAT | O_APPEND, 0644);
-    if (file_output < 0 || file_error < 0)
+    if (file_output < 0 || file_error < 0) {
+        perror("open stdout/stderr");
         _exit(127);
+    }
 
     dup2(file_output, STDOUT_FILENO);
     dup2(file_error,  STDERR_FILENO);
     close(file_output);
     close(file_error);
+
+    for (const auto& [k, v] : cfg.env)
+        setenv(k.c_str(), v.c_str(), 1);
 }
 
 void ProccessManager::execProgram(const std::vector<std::string>& args) {
+    std::vector<char*> argv;
 
+    for (const auto& a : args)
+        argv.push_back(const_cast<char*>(a.c_str()));
+    argv.push_back(nullptr);
+    execvp(argv[0], argv.data());
+
+    _exit(127);
 }

@@ -11,44 +11,47 @@ Parser::Parser(const std::string& path_file)
 // Parser - Public meth
 
 std::vector<ProgramConfig> Parser::loadProgramsConf() {
-    
     std::vector<ProgramConfig> programs;
 
-    // numprocs = 1 -> una entrada
+    // Una linea a stdout y sale: verifica el contenido redirigido.
+    programs.push_back(ProgramConfig{
+        .name        = "greeter",
+        .cmd         = "/bin/echo hello-from-taskmaster",
+        .autostart   = true,
+        .autorestart = "never",
+        .stdout_file = "./logs/greeter.stdout",
+        .stderr_file = "./logs/greeter.stderr",
+    });
+
+    // Salida multilinea a stdout.
+    programs.push_back(ProgramConfig{
+        .name        = "lister",
+        .cmd         = "/bin/ls -la /",
+        .autostart   = true,
+        .autorestart = "never",
+        .stdout_file = "./logs/lister.stdout",
+        .stderr_file = "./logs/lister.stderr",
+    });
+
+    // Provoca un error: va a stderr. Verifica la redireccion de stderr.
+    programs.push_back(ProgramConfig{
+        .name        = "errtest",
+        .cmd         = "/bin/ls /no-existe-xyz",
+        .autostart   = true,
+        .autorestart = "never",
+        .stdout_file = "./logs/errtest.stdout",
+        .stderr_file = "./logs/errtest.stderr",
+    });
+
+    // Larga vida, sin salida: para verlo vivo en ps.
     programs.push_back(ProgramConfig{
         .name        = "sleeper",
         .cmd         = "/bin/sleep 1000",
         .autostart   = true,
         .autorestart = "unexpected",
+        .stdout_file = "./logs/sleeper.stdout",
+        .stderr_file = "./logs/sleeper.stderr",
     });
 
-    // numprocs = 2 -> ya expandido: una entrada por proceso, mismo cmd
-    programs.push_back(ProgramConfig{
-        .name        = "workers_0",
-        .cmd         = "/bin/sleep 500",
-        .autostart   = true,
-        .autorestart = "always",
-    });
-    programs.push_back(ProgramConfig{
-        .name        = "workers_1",
-        .cmd         = "/bin/sleep 500",
-        .autostart   = true,
-        .autorestart = "always",
-    });
-
-    // numprocs = 1 con redireccion/env/workingdir/umask
-    programs.push_back(ProgramConfig{
-        .name        = "greeter",
-        .cmd         = "/bin/echo hello-from-taskmaster",
-        .umask       = 0022,
-        .workingdir  = "/tmp",
-        .autostart   = true,
-        .autorestart = "never",
-        .exitcodes   = {0},
-        .stdout_file = "/tmp/greeter.stdout",
-        .stderr_file = "/tmp/greeter.stderr",
-        .env         = { {"STARTED_BY", "taskmaster"}, {"ANSWER", "42"} },
-    });
-    
     return programs;
 }

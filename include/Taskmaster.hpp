@@ -4,6 +4,7 @@
 #include "Parser.hpp"
 #include "ProgramConfig.hpp"
 #include "Program.hpp"
+#include "ProccessManager.hpp"
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -35,7 +36,7 @@ class Taskmaster {
         Logger& m_logger;
         Parser m_parser;
         //Shell m_shell;
-        //ProcessManager m_proccess_manager;
+        ProccessManager m_proccess_manager;
         std::vector<ProgramConfig> m_programs_conf;
         bool        m_running;
         //std::vector<Program> m_programs;

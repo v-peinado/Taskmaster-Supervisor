@@ -22,7 +22,7 @@ Para llevar un buen registro historico intentaremos llevar una buena coherencia 
 - Logging de eventos a archivo local
 
 **Shell de control**
-- Comandos: "status", "start", "stop", "restart", "reload", "exit"
+- Comandos: status", "start", "stop", "restart", "reload", "exit"
 - Line editing e historial (readline o equivalente)
 
 **Configuración por programa**
@@ -279,6 +279,17 @@ el monitor() detectrara las muertes, salidas, etc y sera quien loguee
 
 el control de eventos por parte de taskmaster usa el logger/consola para registrar el funcionamiento de los procesos lanzados, la salida ya sea de error o estandar se gestionara fuera del logger/consola, para no ensuciar la salida de estos.
 
-En la configuracion se previo un path para salida/err de cada programa, en caso de que no se ponga nada, .empty(), se valora derivar a /dev/null o lo mas optimo, automaticamente crear un fichero o ficheros para cada proceso, de momento co o no esta implemntado el parser, vamos a dejar el dev/null para borrarlpo ,as adelante porque cuando se implemente el automatismo sera codigo muerto.
+En la configuracion se previo un path para salida/err de cada programa, en caso de que no se ponga nada, ".empty()", se valora derivar a /dev/null o lo mas optimo, automaticamente crear un fichero o ficheros para cada proceso, de momento co o no esta implemntado el parser, vamos a dejar el dev/null para borrarlpo ,as adelante porque cuando se implemente el automatismo sera codigo muerto.
 
 ponemos la flag onexec para que se cierre cuando se ejecute, asi evitamos cierre manual.
+
+
+### 2026-06-02
+
+Implementado el arranque de procesos en el ProcessManager: el start() crea
+los Program y lanza los autostart, y el launch() hace el fork/exec (partido
+en setupChild para preparar el hijo y execProgram para el execvp). Ya
+conectado al Taskmaster, que le pasa los configs en init().
+
+Probado a mano con un pause() temporal en el main y un stub de programas (echo,
+ls, sleep): arrancan y escriben sus salidas en logs/, funciona, auqne no estamos comprobando una correcta salida, los procesos pueden quedar conlagos
