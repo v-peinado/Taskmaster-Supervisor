@@ -268,3 +268,17 @@ setters pero agrupados por evento en vez de por campo, así el "Program" nunca
 queda a medias y nadie de fuera depende de cómo guardo el estado por dentro.
 Copia borrada (cada "Program" es un proceso único) pero move por defecto, que
 si no no entra en el vector del "ProcessManager".
+
+
+### 2026-06-14
+
+Tiempo si escreibir en el devlog, pequena regla que siempore hay que tener en cuenta ahora que se esta avanzando en los procesos hijos, los hijos nunca LOGEARAN,
+el monitor() detectrara las muertes, salidas, etc y sera quien loguee
+
+### 2026-06-15
+
+el control de eventos por parte de taskmaster usa el logger/consola para registrar el funcionamiento de los procesos lanzados, la salida ya sea de error o estandar se gestionara fuera del logger/consola, para no ensuciar la salida de estos.
+
+En la configuracion se previo un path para salida/err de cada programa, en caso de que no se ponga nada, .empty(), se valora derivar a /dev/null o lo mas optimo, automaticamente crear un fichero o ficheros para cada proceso, de momento co o no esta implemntado el parser, vamos a dejar el dev/null para borrarlpo ,as adelante porque cuando se implemente el automatismo sera codigo muerto.
+
+ponemos la flag onexec para que se cierre cuando se ejecute, asi evitamos cierre manual.
