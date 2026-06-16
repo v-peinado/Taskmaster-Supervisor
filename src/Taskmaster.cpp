@@ -24,35 +24,19 @@ void Taskmaster::init(){
 }
 
 void Taskmaster::run() {
-    // UNICO bucle del programa: foreground, un solo hilo. En cada vuelta
-    // multiplexa las dos fuentes de eventos + el flag de SIGHUP.
     m_running = true;
-    //while (m_running) {
+    std::string line;
+    
+    while (m_running && std::cout << "taskmaster>") {
+        if (!std::getline(std::cin, line))
+            break;
 
-        // a) Reload: si el handler de SIGHUP levanto el flag, re-parsear y
-        //    aplicar cambios SIN matar los procesos no modificados.
-        //    if (s_reload_requested) {
-        //        auto new_cfg = m_parser.loadProgramsConf();
-        //        m_process_manager.reload(new_cfg);
-        //        s_reload_requested = 0;
-        //    }
+        if (line == "quit") {
+            m_running = false;
+        } else if (!line.empty()) {
+            m_logger.log(Logger::LogLevel::Log, line);
+        }
+    }
 
-        // b) ProcessManager: una pasada de monitorizacion, no bloquea.
-        //    waitpid(WNOHANG) para detectar muertes, epoll para leer
-        //    stdout/stderr, y relanzar si autorestart lo pide.
-        //m_process_manager.monitor();
-
-        // c) Shell: leer comando del usuario si lo hay y enrutarlo. La Shell
-        //    devuelve el comando como DATO; el Taskmaster decide a quien va
-        //    (las clases no se conocen entre si):
-        //      start   -> m_process_manager.start(name)
-        //      stop    -> m_process_manager.stop(name)
-        //      restart -> m_process_manager.restart(name)
-        //      status  -> m_process_manager.status()
-        //      reload  -> (igual que el flag de SIGHUP)
-        //      exit    -> m_running = false;
-    //}
-
-    // Salida ordenada: parar todos los procesos (stopsignal -> stoptime -> kill).
    // m_process_manager.stopAll();
 }

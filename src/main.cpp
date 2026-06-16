@@ -17,8 +17,8 @@ int main(int argc, char **argv) {
     Taskmaster::Config taskmaster_config {.config_file = argv[1]};
     Taskmaster taskmaster(taskmaster_config, *logger);
     taskmaster.init();
-
-    pause(); // para que no se cierre
+    taskmaster.run();
+    //pause(); // para que no se cierre
 
     return 0;
 }
