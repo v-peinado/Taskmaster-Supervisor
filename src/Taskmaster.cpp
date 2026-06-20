@@ -4,6 +4,7 @@
 #include "Parser.hpp"
 #include <poll.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 // Taskmaster - Constructors/Destructors
 

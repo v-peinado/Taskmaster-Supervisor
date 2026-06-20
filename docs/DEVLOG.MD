@@ -310,3 +310,37 @@ Solo lee comandos en stdin(se logean tambien), ojo a eso, poll segun los planes 
 
 A partir de aqui que era mas probar diferentes opciones y realizar tareas temporales para detectar fallos. empezaremos a implementar cosas finales.
 
+### 2026-06-20
+
+Empezado el bonus de capturar la salida de los hijos con pipes. He tocado
+"launch" y "setupChild" en el "ProccessManager".
+
+Ahora antes del fork creo dos pipes (stdout y stderr) con "pipe2" y O_CLOEXEC,
+asi no se filtran a otros hijos y se cierran solos en el exec. El "setupChild"
+ya no abre ficheros, solo hace el dup2 de los write-ends del pipe al STDOUT/STDERR
+del hijo. El abrir y escribir los logfiles pasa a ser cosa del padre, como hace
+supervisor, que se mete en medio del flujo.
+
+Un par de detalles que dejo a proposito: los dos "pipe2" van por separado y no
+con un "||", porque si falla el segundo el primero queda abierto y hay que
+cerrarlo a mano antes del return. Y el O_NONBLOCK lo pongo solo en los read-ends
+del padre con "fcntl"; el write del hijo se queda bloqueante para tener
+backpressure y no perder salida si el padre lee lento.
+
+Compila y arranca, PERO esto esta a medias y hay que tenerlo claro: el padre
+todavia NO cierra los write-ends ni se guarda los read-ends, sigue con
+started(pid). Asi que de momento cada "launch" fuga los 4 fds, y cuando monte la
+lectura el read-end no daria EOF porque el padre sigue siendo escritor. Es el
+siguiente paso, no un olvido.
+
+Siguiente paso, cerrar el lado padre:
+- Meter el wrapper RAII "Fd" para los fds de larga vida del lado padre, que se
+  cierren solos al morir o destruirse el "Program", con move que deja el origen
+  en -1 para no hacer doble close.
+- Ampliar el transition a started(pid, stdout_fd, stderr_fd) para que el
+  "Program" se quede los read-ends en propiedad.
+- En el padre, cerrar los write-ends y meter los read-ends en el poll.
+- Lado lectura: leer hasta EAGAIN y volcar al logfile, y al ver EOF (read == 0)
+  cerrar el read-end y sacarlo del poll set.
+- Y despues el pidfd, para detectar muertes y reapear; sin el seguimos dejando
+  zombies cada vez que un hijo termina.
