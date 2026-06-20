@@ -259,7 +259,7 @@ Pendiente: eempezar el "ProcessManager", qwue como deje en la anterioir entrada 
 
 ### 2026-06-02
 
-Creada e implementada la clase "Program": representa un proceso supervisado,
+creada e implementada la clase "Program": representa un proceso supervisado,
 guarda su "ProgramConfig" + el estado de runtime (pid, state, reintentos). No se
 lanza ni se monitoriza solo, eso es del "ProcessManager"; solo lleva su ficha.
 
@@ -284,7 +284,7 @@ En la configuracion se previo un path para salida/err de cada programa, en caso 
 ponemos la flag onexec para que se cierre cuando se ejecute, asi evitamos cierre manual.
 
 
-### 2026-06-02
+### 2026-06-15
 
 Implementado el arranque de procesos en el ProcessManager: el start() crea
 los Program y lanza los autostart, y el launch() hace el fork/exec (partido
@@ -292,4 +292,21 @@ en setupChild para preparar el hijo y execProgram para el execvp). Ya
 conectado al Taskmaster, que le pasa los configs en init().
 
 Probado a mano con un pause() temporal en el main y un stub de programas (echo,
-ls, sleep): arrancan y escriben sus salidas en logs/, funciona, auqne no estamos comprobando una correcta salida, los procesos pueden quedar conlagos
+ls, sleep): arrancan y escriben sus salidas en logs/, funciona, auqne no estamos comprobando una correcta salida, los procesos pueden quedar conlagos.
+
+### 2026-06-16
+
+Implementado un bucle simple, solo contros de Eof y quit, sera el unico bucle que hay en el proceso, en taskmaster, llamara al monitoreo, estara en taskmastaer llamando tanto a poll como funciones de shell
+
+se prueba el funcionamiento, el siguiente paso es empoezar el monitoreo del proiceso, es una parte critica.
+
+primeor hay que solucioinar que el getline bloquea el bucle, solo funcionar si introduces prompt, para hacer pruebas de funcionamiento anterior era suficiente, pero para empezar a implementar el monitor hay que hacer cambios
+
+### 2026-06-20
+
+Implementado el run con un bucle de poll en lugar de un getline que bloquea, todo sera temporal.
+
+Solo lee comandos en stdin(se logean tambien), ojo a eso, poll segun los planes de futuro multiplexara, entrada por consola, signals con signalfd(), salidas por pipe(de momento estan desviadas a un fichero con dup2), incluso barajamos la posibiloidad de usar pidfd() para no tener que depender de waitpid en el monitory centralizar todo el funcionamiento en un bucle de eventos basado en poll.
+
+A partir de aqui que era mas probar diferentes opciones y realizar tareas temporales para detectar fallos. empezaremos a implementar cosas finales.
+

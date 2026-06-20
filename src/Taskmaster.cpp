@@ -2,6 +2,8 @@
 #include "ProgramConfig.hpp"
 #include "Logger.hpp"
 #include "Parser.hpp"
+#include <poll.h>
+#include <unistd.h>
 
 // Taskmaster - Constructors/Destructors
 
@@ -26,17 +28,29 @@ void Taskmaster::init(){
 void Taskmaster::run() {
     m_running = true;
     std::string line;
-    
-    while (m_running && std::cout << "taskmaster>") {
-        if (!std::getline(std::cin, line))
-            break;
 
-        if (line == "quit") {
-            m_running = false;
-        } else if (!line.empty()) {
-            m_logger.log(Logger::LogLevel::Log, line);
+    struct pollfd pfd;
+    pfd.fd     = STDIN_FILENO;
+    pfd.events = POLLIN;
+
+    while (m_running) {
+        int ready = poll(&pfd, 1, 1000);
+
+        if (ready > 0 && (pfd.revents & POLLIN)) {
+            if (!std::getline(std::cin, line)) {
+                m_running = false;
+                break;
+            }
+            if (line == "quit")
+                m_running = false;
+            else if (!line.empty())
+                m_logger.log(Logger::LogLevel::Log, line);
+
+            if (m_running)
+                std::cout << "taskmaster> " << std::flush;
         }
+
+        //m_process_manager.monitor();
     }
 
-   // m_process_manager.stopAll();
 }
