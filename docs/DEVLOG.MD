@@ -335,12 +335,23 @@ siguiente paso, no un olvido.
 
 Siguiente paso, cerrar el lado padre:
 - Meter el wrapper RAII "Fd" para los fds de larga vida del lado padre, que se
-  cierren solos al morir o destruirse el "Program", con move que deja el origen
-  en -1 para no hacer doble close.
+cierren solos al morir o destruirse el "Program", con move que deja el origen
+en -1 para no hacer doble close.
 - Ampliar el transition a started(pid, stdout_fd, stderr_fd) para que el
-  "Program" se quede los read-ends en propiedad.
+"Program se quede los read-ends en propiedad.
 - En el padre, cerrar los write-ends y meter los read-ends en el poll.
 - Lado lectura: leer hasta EAGAIN y volcar al logfile, y al ver EOF (read == 0)
-  cerrar el read-end y sacarlo del poll set.
+cerrar el read-end y sacarlo del poll set.
 - Y despues el pidfd, para detectar muertes y reapear; sin el seguimos dejando
-  zombies cada vez que un hijo termina.
+zombies cada vez que un hijo termina.
+
+Sera una actualizacion compleja y larga.
+
+### 2026-06-22
+
+Implementamos el wrapper de fd, es bastante sencillo, solo controla el movimiento(se usara en el vector no se puede deletear, ni dejarlo default), se borra la copia, nunca puede haber dos fd class administrando el mismo recurso, doble close etc.
+Siempre que movamos el anterior fd seteara a -1.
+
+IMplementaremos un reseteo, cierre y vuekta a -1, que se implementara en el destructor.
+
+Se implementan tambien un sistema de validacion.
