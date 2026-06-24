@@ -68,10 +68,13 @@ void ProccessManager::launch(Program& program) {
         setupChild(cfg, out_pipe[1], err_pipe[1]);
         execProgram(args);
     }
+
+    close(out_pipe[1]);
+    close(err_pipe[1]);
     fcntl(out_pipe[0], F_SETFL, O_NONBLOCK);
     fcntl(err_pipe[0], F_SETFL, O_NONBLOCK);
 
-    program.started(pid);
+    program.started(pid, out_pipe[0], err_pipe[0]);
 
     m_logger.log(Logger::LogLevel::Info,
                  "Started " + cfg.name + " (pid " + std::to_string(pid) + ")");

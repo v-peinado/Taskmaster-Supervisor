@@ -20,11 +20,22 @@ Program::State Program::getState() const  {return m_state;}
 
 int Program::getRestarts() const {return m_restarts;}
 
+int  Program::getStdoutFd() const {return m_stdout.getFd(); }
+
+int  Program::getStderrFd() const { return m_stderr.getFd(); }
+
+//aux
+
+void Program::closeStdout() { m_stdout.resetFd(); }
+void Program::closeStderr() { m_stderr.resetFd(); }
+
 // Setters // Transitions
 
-void Program::started(pid_t pid) {
+void Program::started(pid_t pid, int stdout_fd, int stderr_fd) {
     m_pid = pid;
     m_state = State::Running;
+    m_stdout = Fd(stdout_fd);
+    m_stderr = Fd(stderr_fd);
 }
 
 void Program::exited() {

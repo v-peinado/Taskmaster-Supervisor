@@ -1,5 +1,6 @@
 #pragma once
 #include "ProgramConfig.hpp"
+#include "Fd.hpp"
 
 class Program {
     public:
@@ -22,18 +23,23 @@ class Program {
 
         // Setters // Transitions
 
-        void started(pid_t pid);
+        void started(pid_t pid, int stdout_fd, int stderr_fd);
         void exited();
         void stopped(); 
         void setFatalError();
         void incRestartNum();
 
         // Getters
-
+        int  getStdoutFd() const;
+        int  getStderrFd() const;
         const ProgramConfig& getProgramConfig() const;
         pid_t getPid() const;
         State getState() const;
         int getRestarts() const;
+
+        //aux
+        void closeStdout();
+        void closeStderr();
 
     private:
 
@@ -41,4 +47,6 @@ class Program {
         pid_t           m_pid;
         State           m_state;
         int             m_restarts;
+        Fd              m_stdout;
+        Fd              m_stderr;
 };

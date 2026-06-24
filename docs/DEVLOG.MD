@@ -355,3 +355,11 @@ Siempre que movamos el anterior fd seteara a -1.
 IMplementaremos un reseteo, cierre y vuekta a -1, que se implementara en el destructor.
 
 Se implementan tambien un sistema de validacion.
+
+### 2026-06-20
+
+Implementamos FD en program. Program::started, ahora se quedan con la propiedad al haber implementado el move
+
+Añadidos getStdoutFd/getStderrFd, seran utiles para epoll
+El padre ahora cierra fd para evitar los fd leak al salir
+hay que empezar a implementar epoll
