@@ -53,5 +53,5 @@ void Taskmaster::run() {
 
         //m_process_manager.monitor();
     }
-
+    m_proccess_manager.stopAll();
 }

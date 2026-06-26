@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <csignal>
 
 // Constructors//destructor
 
@@ -23,6 +24,20 @@ void ProccessManager::startManager(const std::vector<ProgramConfig>& configs) {
     for (auto& program : m_programs) {
         if (program.getProgramConfig().autostart) {
             launch(program);      
+        }
+    }
+}
+
+void ProccessManager::stopAll() {
+    for (auto& program : m_programs) {
+        if (program.getState() == Program::State::Running) {
+            pid_t pid = program.getPid();
+            if (pid > 0) {
+                kill(pid, SIGTERM);
+                m_logger.log(Logger::LogLevel::Info,
+                             "Sent SIGTERM to " + program.getProgramConfig().name +
+                             " (pid " + std::to_string(pid) + ")");
+            }
         }
     }
 }
