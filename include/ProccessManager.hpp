@@ -2,6 +2,7 @@
 #include <vector>
 #include "ProgramConfig.hpp"
 #include "Program.hpp"
+#include "Fd.hpp"
 
 class Logger;
 
@@ -28,10 +29,15 @@ class ProccessManager {
         const std::string& status() const;
  
     private:
-        Logger&              m_logger;
-        std::vector<Program> m_programs; 
+        Logger&                 m_logger;
+        std::vector<Program>    m_programs;
+        Fd                      m_epoll;
 
         void launch(Program& program);
+
+        //epoll aux
+        void addToEpoll(int fd);
+        void removeFromEpoll(int fd);
 
         // launch aux
         std::vector<std::string> splitCmd(const std::string& cmd);

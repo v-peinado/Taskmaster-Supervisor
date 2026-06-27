@@ -6,11 +6,17 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <csignal>
+#include <sys/epoll.h>
 
 // Constructors//destructor
 
 ProccessManager::ProccessManager(Logger& logger) 
-    : m_logger(logger) {}
+    : m_logger(logger)
+    , m_epoll(epoll_create1(EPOLL_CLOEXEC)) {
+        if (!m_epoll.validFd())
+            std::cout << "ERROR DE EPOLL" << std::endl;//no esta implementado trycatch todavia throw std::runtime_error("epoll_create1 failed");
+    }
+
 
 // public methods
 
@@ -94,10 +100,31 @@ void ProccessManager::launch(Program& program) {
 
     program.started(pid, out_pipe[0], err_pipe[0], log_out, log_err);
 
+    addToEpoll(out_pipe[0]);
+    addToEpoll(err_pipe[0]);
+
     m_logger.log(Logger::LogLevel::Info,
                  "Started " + cfg.name + " (pid " + std::to_string(pid) + ")");
 }
 
+//epoll aux
+
+void ProccessManager::addToEpoll(int fd) {
+    if (fd < 0)
+        return;
+
+    struct epoll_event ev{};
+    ev.events  = EPOLLIN;
+    ev.data.fd = fd;
+    epoll_ctl(m_epoll.getFd(), EPOLL_CTL_ADD, fd, &ev);
+}
+
+void ProccessManager::removeFromEpoll(int fd) {
+    if (fd < 0)
+        return;
+
+    epoll_ctl(m_epoll.getFd(), EPOLL_CTL_DEL, fd, nullptr);
+}
 
 // launch aux
 

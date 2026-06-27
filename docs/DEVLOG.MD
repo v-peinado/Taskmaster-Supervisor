@@ -363,3 +363,38 @@ Implementamos FD en program. Program::started, ahora se quedan con la propiedad 
 Añadidos getStdoutFd/getStderrFd, seran utiles para epoll
 El padre ahora cierra fd para evitar los fd leak al salir
 hay que empezar a implementar epoll
+
+### 2026-06-26
+
+Implementado ProcecssManager::stopAll(), se ocupara de matar todos los procesos al terminar el programa principal, es decir al salir del bucle run, y en el futuro sera usado si necesitamos una salida limpia.
+
+### 2026-06-20
+
+Apunto el plan del bonus que si no me lio.
+
+Voy a por tres: cliente/servidor, attach/detach y daemonizar. La idea es un solo
+binario que segun como lo llames arranca como servidor (supervisa y abre el
+socket) o como cliente (la shell). El cliente se queda la shell y puede
+engancharse a la salida en vivo de un programa (attach) y soltarla (detach). Lo
+de daemonizar lo dejo para el final, que ya lo tengo de otro proyecto.
+
+No hago dos versiones. La bonus ya lleva el mandatory dentro, asi que una sola y
+montada por capas para que en cada paso el mandatory funcione.
+
+Los logs son dos cosas: el app.log es solo para eventos del daemon, y la salida
+de cada hijo va a su propio fichero, nunca mezclada. Eso es lo que hace posible
+el attach.
+
+Orden, cada paso probado antes del siguiente:
+1. Capturar la salida con pipes y volcarla al fichero de cada programa (es lo de
+   ahora).
+2. El socket y el cliente con la shell.
+3. El attach/detach.
+4. Daemonizar.
+
+Aviso para mi yo del futuro: ahora tengo dos cosas escuchando a la vez (el poll
+de stdin en el Taskmaster y el epoll en el ProccessManager), pero es temporal. El
+proyecto acaba con UN solo bucle, que se monta cuando meta el socket (paso 2).
+
+De hoy: metido el "Fd" en el "Program", los logfiles los abre el padre, y creado
+el epoll registrando los pipes. Falta leer de los pipes y volcar al fichero.
