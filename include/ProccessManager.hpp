@@ -37,4 +37,5 @@ class ProccessManager {
         std::vector<std::string> splitCmd(const std::string& cmd);
         void setupChild(const ProgramConfig& cfg, int out_write, int err_write);
         void execProgram(const std::vector<std::string>& args);
+        int openLogFile(const std::string& path);
 };

@@ -89,7 +89,10 @@ void ProccessManager::launch(Program& program) {
     fcntl(out_pipe[0], F_SETFL, O_NONBLOCK);
     fcntl(err_pipe[0], F_SETFL, O_NONBLOCK);
 
-    program.started(pid, out_pipe[0], err_pipe[0]);
+    int log_out = openLogFile(cfg.stdout_file);
+    int log_err = openLogFile(cfg.stderr_file);
+
+    program.started(pid, out_pipe[0], err_pipe[0], log_out, log_err);
 
     m_logger.log(Logger::LogLevel::Info,
                  "Started " + cfg.name + " (pid " + std::to_string(pid) + ")");
@@ -134,4 +137,10 @@ void ProccessManager::execProgram(const std::vector<std::string>& args) {
     execvp(argv[0], argv.data());
 
     _exit(127);
+}
+
+int ProccessManager::openLogFile(const std::string& path) {
+    if (path.empty())
+        return -1;
+    return open(path.c_str(), O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0644);
 }

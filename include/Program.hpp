@@ -23,7 +23,7 @@ class Program {
 
         // Setters // Transitions
 
-        void started(pid_t pid, int stdout_fd, int stderr_fd);
+        void started(pid_t pid, int stdout_fd, int stderr_fd, int stdout_log, int stderr_log);
         void exited();
         void stopped(); 
         void setFatalError();
@@ -36,6 +36,8 @@ class Program {
         pid_t getPid() const;
         State getState() const;
         int getRestarts() const;
+        int getStdoutLogFd() const;
+        int getStderrLogFd() const;
 
         //aux
         void closeStdout();
@@ -49,4 +51,6 @@ class Program {
         int             m_restarts;
         Fd              m_stdout;
         Fd              m_stderr;
+        Fd              m_stdout_log;
+        Fd              m_stderr_log;
 };
