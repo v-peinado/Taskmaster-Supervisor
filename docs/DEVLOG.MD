@@ -423,3 +423,16 @@ lleva el kernel. Lo unico mio que se queda es la tablita fd->Program para traduc
 Y esto encaja con lo de los dos bucles: cuando llegue el socket (paso 2), el poll
 de stdin desaparece y meto el socket, el signalfd y los pidfds en este mismo
 epoll. Todo a un solo epoll_wait, sin ningun array de fds mio.
+
+
+### 2026-06-20
+
+Funcionando la captura de salida por pipes de punta a punta. La salida del hijo
+viaja pipe -> epoll la detecta -> el padre lee con "readFromChild" -> escribe al
+logfile de ese programa. Probado con los stubs (greeter, lister, errtest) y cada
+uno escribe en su fichero. Ya no es el dup2 directo a fichero, ahora el padre
+esta en medio, que es lo que hace falta para el attach y el cliente/servidor.
+
+El fallo de que salieran vacios era tonto: tenia la llamada a "monitor()"
+comentada en el "run()", asi que el epoll_wait nunca corria y nadie leia los
+pipes. Descomentada y listo.
