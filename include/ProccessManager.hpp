@@ -35,6 +35,10 @@ class ProccessManager {
 
         void launch(Program& program);
 
+        //monitor aux
+        void readFromChild(int fd);
+        Program* findByReadFd(int fd);
+
         //epoll aux
         void addToEpoll(int fd);
         void removeFromEpoll(int fd);

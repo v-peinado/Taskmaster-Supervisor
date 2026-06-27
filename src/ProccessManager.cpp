@@ -107,6 +107,61 @@ void ProccessManager::launch(Program& program) {
                  "Started " + cfg.name + " (pid " + std::to_string(pid) + ")");
 }
 
+void ProccessManager::monitor() {
+    struct epoll_event events[64];
+
+    int n = epoll_wait(m_epoll.getFd(), events, 64, 0);
+
+    for (int i = 0; i < n; i++) {
+        int fd = events[i].data.fd;
+        readFromChild(fd);
+    }
+}
+
+Program* ProccessManager::findByReadFd(int fd) {
+    for (auto& program : m_programs)
+        if (program.getStdoutFd() == fd || program.getStderrFd() == fd)
+            return &program;
+    return nullptr;
+}
+
+void ProccessManager::readFromChild(int fd) {
+    Program* program = findByReadFd(fd);
+    if (!program)
+        return;
+
+    bool is_stdout = false;
+    if (program->getStdoutFd() == fd)
+        is_stdout = true;
+
+    int log_fd;
+    if (is_stdout)
+        log_fd = program->getStdoutLogFd();
+    else
+        log_fd = program->getStderrLogFd();
+
+    char buf[4096];
+    while (true) {
+        ssize_t n = read(fd, buf, sizeof(buf));
+
+        if (n > 0) {
+            if (log_fd >= 0)
+                write(log_fd, buf, n);
+        }
+        else if (n == 0) {
+            removeFromEpoll(fd);
+            if (is_stdout)
+                program->closeStdout();
+            else
+                program->closeStderr();
+            break;
+        }
+        else {
+            break;
+        }
+    }
+}
+
 //epoll aux
 
 void ProccessManager::addToEpoll(int fd) {
