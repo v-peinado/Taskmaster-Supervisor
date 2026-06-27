@@ -51,7 +51,7 @@ void Taskmaster::run() {
                 std::cout << "taskmaster> " << std::flush;
         }
 
-        //m_process_manager.monitor();
+        m_proccess_manager.monitor();
     }
     m_proccess_manager.stopAll();
 }
