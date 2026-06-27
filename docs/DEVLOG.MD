@@ -398,3 +398,28 @@ proyecto acaba con UN solo bucle, que se monta cuando meta el socket (paso 2).
 
 De hoy: metido el "Fd" en el "Program", los logfiles los abre el padre, y creado
 el epoll registrando los pipes. Falta leer de los pipes y volcar al fichero.
+
+
+### 2026-06-20
+
+Implementado el lado de lectura de los pipes con epoll. El "monitor()" hace un
+"epoll_wait" con timeout 0 (no bloquea, solo mira si hay salida lista y vuelve),
+y por cada read-end con datos llama a "readFromChild", que lee hasta EAGAIN y
+vuelca al logfile de ese programa. Al ver EOF (read == 0) cierra el read-end y lo
+saca del epoll. El lookup fd->Program de momento es lineal, ya lo afinare.
+
+Me ha costado entender el epoll viniendo de poll, asi que lo apunto. Con poll yo
+mantenia el array de TODOS los fds y lo recorria entero preguntando cual estaba
+listo. Con epoll la lista de fds la guarda el KERNEL (se la di una vez con
+epoll_ctl), y el "epoll_wait" me devuelve SOLO los que estan listos, no todos. El
+"events[64]" no es mi lista de fds, es un buzon vacio donde el kernel me escribe
+los que han disparado. Y el "events[i].data.fd" es la etiqueta que yo mismo puse
+al registrar el fd, el kernel me la devuelve para saber cual leer.
+
+O sea que el vector de fds que pensaba que tendria que llevar a mano NO existe, lo
+lleva el kernel. Lo unico mio que se queda es la tablita fd->Program para traducir
+"el fd 7 tiene datos" a "esto es nginx".
+
+Y esto encaja con lo de los dos bucles: cuando llegue el socket (paso 2), el poll
+de stdin desaparece y meto el socket, el signalfd y los pidfds en este mismo
+epoll. Todo a un solo epoll_wait, sin ningun array de fds mio.
