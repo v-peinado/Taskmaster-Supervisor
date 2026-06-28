@@ -474,3 +474,5 @@ captura,mos la razon de su muertes y comprobamos si tiene la posibilidad de rest
 
 Para saber si debemos relanzarlo miramos su variable autorestart, si es never = false, si es always = true y
 si es una salida inexperada o es por un exitcode contemplado.
+
+No estoy logeando los test, voy a intentar mejorar eso

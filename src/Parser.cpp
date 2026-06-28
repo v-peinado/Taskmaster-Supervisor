@@ -46,9 +46,9 @@ std::vector<ProgramConfig> Parser::loadProgramsConf() {
     // Larga vida, sin salida: para verlo vivo en ps.
     programs.push_back(ProgramConfig{
         .name        = "sleeper",
-        .cmd         = "/bin/sleep 1000",
+        .cmd         = "/bin/sleep 1000000",
         .autostart   = true,
-        .autorestart = "unexpected",
+        .autorestart = "always",
         .stdout_file = "./logs/sleeper.stdout",
         .stderr_file = "./logs/sleeper.stderr",
     });
