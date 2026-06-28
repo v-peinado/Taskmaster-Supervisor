@@ -157,6 +157,23 @@ Program* ProccessManager::findByPidFd(int fd) {
             return &program;
     return nullptr;
 }
+bool ProccessManager::shouldRestart(const Program& program, bool by_signal, int code) {
+    const ProgramConfig& cfg = program.getProgramConfig();
+
+    if (cfg.autorestart == "never")
+        return false;
+
+    if (cfg.autorestart == "always")
+        return true;
+
+    if (by_signal) // death by signal is always unexpected
+        return true;
+
+    for (int expected : cfg.exitcodes)
+        if (code == expected)
+            return false;
+    return true;
+}
 
 void ProccessManager::handleDeath(Program& program) {
     int pidfd = program.getPidFd();
@@ -165,20 +182,22 @@ void ProccessManager::handleDeath(Program& program) {
     info.si_pid = 0;
     waitid(P_PIDFD, pidfd, &info, WEXITED);
 
-    if (info.si_code == CLD_EXITED)
+    bool by_signal = (info.si_code != CLD_EXITED);
+    int  code = info.si_status;
+
+    if (by_signal)
         m_logger.log(Logger::LogLevel::Info,
-            program.getProgramConfig().name + " exited, code " +
-            std::to_string(info.si_status));
+            program.getProgramConfig().name + " killed by signal " + std::to_string(code));
     else
         m_logger.log(Logger::LogLevel::Info,
-            program.getProgramConfig().name + " killed by signal " +
-            std::to_string(info.si_status));
+            program.getProgramConfig().name + " exited, code " + std::to_string(code));
 
     removeFromEpoll(pidfd);
     program.closePidFd();
     program.exited();
 
-    // autorestart
+    if (shouldRestart(program, by_signal, code))
+        launch(program);
 }
 
 void ProccessManager::readFromChild(int fd) {

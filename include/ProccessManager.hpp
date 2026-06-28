@@ -40,6 +40,7 @@ class ProccessManager {
         Program* findByReadFd(int fd);
         Program* findByPidFd(int fd);
         void     handleDeath(Program& program);
+        bool shouldRestart(const Program& program, bool by_signal, int code);
 
         //epoll aux
         void addToEpoll(int fd);

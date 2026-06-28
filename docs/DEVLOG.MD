@@ -466,3 +466,11 @@ Creamos la estructura para los fd, hacemos cambios en las funciones que los usab
 Añadimos std::move cuando lo usamos, porque si Fd se copia y se elimina el la funcion 
 original al salir del scope se libera el recurso, por lo que usamos move que cambia la
 propiedad del recurso.
+
+### 2026-06-28
+
+Como ya capturo la muerte del hijo, puedo empezar a gestionar el restart, mpodificamos el handleDeath,
+captura,mos la razon de su muertes y comprobamos si tiene la posibilidad de restart si es asi lo relanzamos.
+
+Para saber si debemos relanzarlo miramos su variable autorestart, si es never = false, si es always = true y
+si es una salida inexperada o es por un exitcode contemplado.
