@@ -13,6 +13,14 @@ class Program {
             Fatal
         };
 
+        struct ProcessIO {
+            Fd stdout_read;
+            Fd stderr_read;
+            Fd stdout_log;
+            Fd stderr_log;
+            Fd pidfd;
+        };
+
         Program(const ProgramConfig& cfg);
         Program() = delete;
         ~Program() = default;
@@ -23,7 +31,7 @@ class Program {
 
         // Setters // Transitions
 
-        void started(pid_t pid, int stdout_fd, int stderr_fd, int stdout_log, int stderr_log, int pidfd);
+        void started(pid_t pid, ProcessIO io);
         void exited();
         void stopped(); 
         void setFatalError();
@@ -51,9 +59,5 @@ class Program {
         pid_t           m_pid;
         State           m_state;
         int             m_restarts;
-        Fd              m_stdout;
-        Fd              m_stderr;
-        Fd              m_stdout_log;
-        Fd              m_stderr_log;
-        Fd              m_pidfd;
+        ProcessIO       m_io;
 };

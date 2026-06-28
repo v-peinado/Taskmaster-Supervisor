@@ -436,3 +436,33 @@ esta en medio, que es lo que hace falta para el attach y el cliente/servidor.
 El fallo de que salieran vacios era tonto: tenia la llamada a "monitor()"
 comentada en el "run()", asi que el epoll_wait nunca corria y nadie leia los
 pipes. Descomentada y listo.
+
+
+### 2026-06-28
+
+El pidfd funcionando, ya detecto las muertes de los hijos. Cada programa se queda
+su pidfd (otro fd) que el epoll vigila, y cuando el hijo muere el fd se vuelve
+legible. En el monitor miro si el fd que disparo es un pidfd (findByPidFd) y si
+lo es llamo a "handleDeath", que reapea con waitid(P_PIDFD) y saca el status.
+
+Probado matando un sleeper con kill: sale en el log "killed by signal 15", y los
+otros stubs salen con su codigo (greeter 0, errtest 2). Distingue bien exit normal
+de muerte por señal. Y lo importante, ya no deja zombies, el waitid los recolecta.
+
+Lio con la compilacion: mi ubuntu es viejo y los headers no traen P_PIDFD (el
+kernel si, es 6.8, era cosa de los headers de glibc, no del kernel). Lo defino yo
+con un #ifndef y un static_cast a idtype_t, que mi glibc ya tiene el enum estricto
+pero sin el valor. Asi compila en mi maquina y el dia que pase al contenedor con
+headers nuevos el #define se ignora solo.
+
+Siguiente paso crear una struct para los fd que hay una funcion que ha acabado teniendo
+6 parametros.
+
+
+### 2026-06-28
+
+Creamos la estructura para los fd, hacemos cambios en las funciones que los usaban.
+
+Añadimos std::move cuando lo usamos, porque si Fd se copia y se elimina el la funcion 
+original al salir del scope se libera el recurso, por lo que usamos move que cambia la
+propiedad del recurso.

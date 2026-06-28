@@ -11,7 +11,7 @@
 #include <sys/wait.h>
 
 #ifndef P_PIDFD    // dependiendo de la version de glibc puede no tener esta macro definida
-#define P_PIDFD
+#define P_PIDFD static_cast<idtype_t>(3)
 #endif
 
 #ifndef SYS_pidfd_open
@@ -102,6 +102,7 @@ void ProccessManager::launch(Program& program) {
 
     close(out_pipe[1]);
     close(err_pipe[1]);
+
     fcntl(out_pipe[0], F_SETFL, O_NONBLOCK);
     fcntl(err_pipe[0], F_SETFL, O_NONBLOCK);
 
@@ -110,7 +111,14 @@ void ProccessManager::launch(Program& program) {
     int log_out = openLogFile(cfg.stdout_file);
     int log_err = openLogFile(cfg.stderr_file);
 
-    program.started(pid, out_pipe[0], err_pipe[0], log_out, log_err, pidfd);
+    Program::ProcessIO io;
+    io.stdout_read = Fd(out_pipe[0]);
+    io.stderr_read = Fd(err_pipe[0]);
+    io.stdout_log = Fd(log_out);
+    io.stderr_log = Fd(log_err);
+    io.pidfd = Fd(pidfd);
+
+    program.started(pid, std::move(io));
 
     addToEpoll(out_pipe[0]);
     addToEpoll(err_pipe[0]);

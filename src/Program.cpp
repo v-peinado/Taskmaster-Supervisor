@@ -1,5 +1,6 @@
 #include "Program.hpp"
 #include "ProgramConfig.hpp"
+#include <utility> 
 
 
 // Program - Constructors and destructors
@@ -20,34 +21,30 @@ Program::State Program::getState() const  {return m_state;}
 
 int Program::getRestarts() const {return m_restarts;}
 
-int  Program::getStdoutFd() const {return m_stdout.getFd(); }
+int Program::getStdoutFd() const { return m_io.stdout_read.getFd(); }
 
-int  Program::getStderrFd() const { return m_stderr.getFd(); }
+int Program::getStderrFd() const { return m_io.stderr_read.getFd(); }
 
-int Program::getStdoutLogFd() const { return m_stdout_log.getFd();}
+int Program::getStdoutLogFd() const { return m_io.stdout_log.getFd(); }
 
-int Program::getStderrLogFd() const { return m_stderr_log.getFd(); }
+int Program::getStderrLogFd() const { return m_io.stderr_log.getFd(); }
 
-int Program::getPidFd() const { return m_pidfd.getFd(); }
+int Program::getPidFd() const { return m_io.pidfd.getFd(); }
 
 //aux
 
-void Program::closeStdout() { m_stdout.resetFd(); }
+void Program::closeStdout() { m_io.stdout_read.resetFd(); }
 
-void Program::closeStderr() { m_stderr.resetFd(); }
+void Program::closeStderr() { m_io.stderr_read.resetFd(); }
 
-void Program::closePidFd() { m_pidfd.resetFd(); }
+void Program::closePidFd()  { m_io.pidfd.resetFd(); }
 
 // Setters // Transitions
 
-void Program::started(pid_t pid, int stdout_fd, int stderr_fd, int stdout_log, int stderr_log, int pidfd) {
+void Program::started(pid_t pid, ProcessIO io) {
     m_pid = pid;
     m_state = State::Running;
-    m_stdout = Fd(stdout_fd);
-    m_stderr = Fd(stderr_fd);
-    m_stdout_log = Fd(stdout_log);
-    m_stderr_log = Fd(stderr_log);
-    m_pidfd      = Fd(pidfd);
+    m_io    = std::move(io); 
 }
 
 void Program::exited() {
