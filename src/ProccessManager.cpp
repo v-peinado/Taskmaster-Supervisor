@@ -142,6 +142,19 @@ void ProccessManager::monitor() {
         }
         readFromChild(fd);
     }
+    confirmStarted();
+}
+
+void ProccessManager::confirmStarted() {
+    for (auto& program : m_programs) {
+        if (program.getState() == Program::State::Starting
+            && program.startWindowPassed()) {
+            program.setRunning();
+            program.resetRestarts();
+            m_logger.log(Logger::LogLevel::Info,
+                program.getProgramConfig().name + " running");
+        }
+    }
 }
 
 Program* ProccessManager::findByReadFd(int fd) {
@@ -184,6 +197,7 @@ void ProccessManager::handleDeath(Program& program) {
 
     bool by_signal = (info.si_code != CLD_EXITED);
     int  code = info.si_status;
+    bool was_starting = !program.startWindowPassed();
 
     if (by_signal)
         m_logger.log(Logger::LogLevel::Info,
@@ -195,6 +209,20 @@ void ProccessManager::handleDeath(Program& program) {
     removeFromEpoll(pidfd);
     program.closePidFd();
     program.exited();
+
+    if (was_starting) {
+        program.incRestartNum();
+        if (program.getRestarts() >= program.getProgramConfig().startretries) {
+            program.setFatalError();
+            m_logger.log(Logger::LogLevel::Error,
+                program.getProgramConfig().name + " failed to start, giving up");
+            return;
+        }
+        m_logger.log(Logger::LogLevel::Warning,
+            program.getProgramConfig().name + " failed to start, retrying");
+        launch(program);
+        return;
+    }
 
     if (shouldRestart(program, by_signal, code))
         launch(program);

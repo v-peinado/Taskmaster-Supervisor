@@ -1,6 +1,7 @@
 #include "Program.hpp"
 #include "ProgramConfig.hpp"
-#include <utility> 
+#include <utility>
+#include <chrono>
 
 
 // Program - Constructors and destructors
@@ -41,10 +42,25 @@ void Program::closePidFd()  { m_io.pidfd.resetFd(); }
 
 // Setters // Transitions
 
+void Program::setRunning() {
+    m_state = State::Running;
+}
+
 void Program::started(pid_t pid, ProcessIO io) {
     m_pid = pid;
     m_state = State::Running;
-    m_io    = std::move(io); 
+    m_io    = std::move(io);
+    m_start_time = std::chrono::steady_clock::now();
+}
+
+bool Program::startWindowPassed() const {
+    auto now     = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - m_start_time).count();
+    return elapsed >= m_config.starttime;
+}
+
+void Program::resetRestarts() { 
+    m_restarts = 0;
 }
 
 void Program::exited() {

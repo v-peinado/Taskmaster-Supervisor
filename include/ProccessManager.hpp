@@ -39,8 +39,9 @@ class ProccessManager {
         void readFromChild(int fd);
         Program* findByReadFd(int fd);
         Program* findByPidFd(int fd);
-        void     handleDeath(Program& program);
+        void handleDeath(Program& program);
         bool shouldRestart(const Program& program, bool by_signal, int code);
+        void confirmStarted();
 
         //epoll aux
         void addToEpoll(int fd);

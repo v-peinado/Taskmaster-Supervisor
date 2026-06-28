@@ -1,6 +1,7 @@
 #pragma once
 #include "ProgramConfig.hpp"
 #include "Fd.hpp"
+#include <chrono>
 
 class Program {
     public:
@@ -36,6 +37,8 @@ class Program {
         void stopped(); 
         void setFatalError();
         void incRestartNum();
+        void resetRestarts();
+        void setRunning();
 
         // Getters
         int  getStdoutFd() const;
@@ -52,6 +55,7 @@ class Program {
         void closeStdout();
         void closeStderr();
         void closePidFd();
+        bool startWindowPassed() const;
 
     private:
 
@@ -60,4 +64,5 @@ class Program {
         State           m_state;
         int             m_restarts;
         ProcessIO       m_io;
+        std::chrono::steady_clock::time_point m_start_time;
 };

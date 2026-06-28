@@ -22,14 +22,14 @@ Para llevar un buen registro historico intentaremos llevar una buena coherencia 
 - Logging de eventos a archivo local
 
 **Shell de control**
-- Comandos: status", "start", "stop", "restart", "reload", "exit"
+- Comandos: status, start, stop, restart, reload, exit
 - Line editing e historial (readline o equivalente)
 
 **Configuración por programa**
-- "cmd", "numprocs", "autostart", "autorestart" (always/never/unexpected)
-- "exitcodes", "starttime", "startretries"
-- "stopsignal", "stoptime"
-- "stdout", "stderr", "env", "workingdir", "umask"
+- cmd, numprocs, autostart, autorestart (always/never/unexpected)
+- exitcodes, starttime, startretries
+- stopsignal, stoptime
+- stdout, stderr, env, workingdir, umask
 
 ## Posibles mejortas
 
@@ -80,27 +80,27 @@ Diseño de arquitectura inicial.
 
 **Decisiones tomadas**
 
-El programa recibe la ruta al config file como argumento. El "main" hace lo mínimo: crear el logger, construir "Taskmaster" e invocar "init()" y "run()". Todo el ciclo de vida del sistema vive dentro del orquestador.
+El programa recibe la ruta al config file como argumento. El main hace lo mínimo: crear el logger, construir Taskmaster e invocar init() y run(). Todo el ciclo de vida del sistema vive dentro del orquestador.
 
 El logger se crea antes que cualquier otra cosa para capturar fallos
 desde el primer momento, incluyendo errores de parseo o inicialización.
 
-"Taskmaster" recibe en su "Config" solo "config_file". El log file no
+Taskmaster recibe en su Config solo config_file. El log file no
 es su responsabilidad, el logger ya está construido cuando se crea.
 
-"init()" construye todo lo necesario: parser, programs, shell. "run()"
-arranca el bucle principal. Si "init()" falla, "run()" no se llama.
+init() construye todo lo necesario: parser, programs, shell. run()
+arranca el bucle principal. Si init() falla, run() no se llama.
 
-"Parser" y "Shell" son miembros directos de "Taskmaster", no punteros.
+Parser y Shell son miembros directos de Taskmaster, no punteros.
 No se prevé que cambien de tamaño ni necesitan polimorfismo. El vector
-de "Program" es "std::vector<Program>", la STL gestiona su heap.
+de Program es std::vector<Program>, la STL gestiona su heap.
 
-"Shell" encapsula toda la lógica de readline, historial y parseo de
+Shell encapsula toda la lógica de readline, historial y parseo de
 comandos. Se estudia separar la lógica de comandos en una clase propia,
-"Taskmaster" no debería contener lógica de comandos directamente.
+Taskmaster no debería contener lógica de comandos directamente.
 
 Pendiente:
-- Implementar "Taskmaster", "Parser", "Shell" y "Program"
+- Implementar Taskmaster, Parser, Shell y Program
 - Diseñar la gestión de procesos: multiplexación de salidas (poll vs epoll),
   señales y comprobación de vida, posiblemente todo en un mismo módulo
 - Estudiar si la lógica de señales merece clase propia o vive junto
@@ -111,17 +111,17 @@ Pendiente:
 
 **Decisiones de diseño — config y arranque**
 
-Se estudia crear una clase "ProgramConfig" que represente la configuración
+Se estudia crear una clase ProgramConfig que represente la configuración
 de un programa tal como viene del YAML. El parser devolvería un
-"std::vector<ProgramConfig>" a "Taskmaster".
+std::vector<ProgramConfig> a Taskmaster.
 
-De esta forma "Program" recibe su "ProgramConfig" ya construida y no
+De esta forma Program recibe su ProgramConfig ya construida y no
 sabe nada de YAML ni de parseo.
 
-Se estudia separar la gestión de procesos en un "ProcessManager" único
-que recibe y gestiona un "std::vector<Program>". Se encarga de todo lo
+Se estudia separar la gestión de procesos en un ProcessManager único
+que recibe y gestiona un std::vector<Program>. Se encarga de todo lo
 relacionado con el sistema operativo: fork/exec, waitpid(WNOHANG) y
-multiplexado de salidas con poll/epoll. "Program" solo representa estado
+multiplexado de salidas con poll/epoll. Program solo representa estado
 y configuración, no sabe cómo se lanza ni cómo se monitoriza.
 
 Pendiente decidir comportamiento ante fallo en el arranque:
@@ -140,7 +140,7 @@ multihilo.
 ### 2026-05-30
 
 Este sera el plan a seguir.
-"main" crea el logger y el Taskmaster. init() construye el parser,
+main crea el logger y el Taskmaster. init() construye el parser,
 la shell y el ProcessManager. El ProcessManager crea los Program
 a partir de los ProgramConfig pero no los arranca todavía.
 
@@ -197,7 +197,7 @@ while(running)
 
 ### 2026-05-31
 
-Empezamos a implementar la clase "Taskmaster", constructor, y prueba de compilacion con init(), que escribe un log de prueba, ninguna funcuionalidad mas.
+Empezamos a implementar la clase Taskmaster, constructor, y prueba de compilacion con init(), que escribe un log de prueba, ninguna funcuionalidad mas.
 
 [31/05/2026-03:00:16] [ INFO ] - Application: Taskmaster is running
 
@@ -206,21 +206,21 @@ Empezamos a implementar la clase "Taskmaster", constructor, y prueba de compilac
 
 **ProgramConfig y arranque con config file**
 
-Añadida "ProgramConfig" (config de un programa del YAML) con tipos planos
+Añadida ProgramConfig (config de un programa del YAML) con tipos planos
 
-"main" recibe la ruta del config como argumento, crea el logger en "./logs/",
-construye "Taskmaster" y llama a "init()". "Taskmaster::Config" queda solo con
-"config_file"; guarda "m_programs_conf" (lo llenará el parser) y declara "stop()".
-"init()" por ahora solo loggea; el config aún no se valida.
+main recibe la ruta del config como argumento, crea el logger en ./logs/,
+construye Taskmaster y llama a init(). Taskmaster::Config queda solo con
+config_file; guarda m_programs_conf (lo llenará el parser) y declara stop().
+init() por ahora solo loggea; el config aún no se valida.
 
 ### 2026-05-31
 
-Hoy he añadido el "ProgramConfig", la estructura con la config de cada programa
+Hoy he añadido el ProgramConfig, la estructura con la config de cada programa
 del YAML. Al final lo he dejado simple con tipos planos (int, bool, string......),
 sin enums ni optional ni chrono, que me estaba liando y sobreingenierizando.
 Toda la chicha de validar y traducir (umask en octal, autorestart y stopsignal
 como string, lo de vacío = descartar/heredar) la hago en el parser, no en el
-struct. He dejado el "name" porque el nombre del programa es la clave del mapa
+struct. He dejado el name porque el nombre del programa es la clave del mapa
 YAML y lo voy a necesitar para el status y para el reload.
 
 También he tocado el main y el Taskmaster. Ahora el main recibe la ruta del
@@ -234,40 +234,40 @@ Pendiente: el parser que lea el YAML, validar el config y meterle mano a run() y
 
 ### 2026-06-01
 
-He fijado el patrón de las clases: "Config" en todas las configurables
-("Logger", "Taskmaster", "ProcessManager"), con todos los campos con un default,
+He fijado el patrón de las clases: Config en todas las configurables
+(Logger, Taskmaster, ProcessManager), con todos los campos con un default,
 porque así si una clase crece añado campos sin romper ninguna llamada y de paso
 las llamadas quedan autodocumentadas. Lo veo versátil y escalable. La excepción
-es el "Parser": estoy seguro de que nunca va a escalar (su única entrada es el
-path del config), así que ese no usa "Config", el constructor toma el path
+es el Parser: estoy seguro de que nunca va a escalar (su única entrada es el
+path del config), así que ese no usa Config, el constructor toma el path
 directamente.
 
-En "Parser" El constructor solo guarda el path, no
-abre nada; el trabajo de verdad va en "load()", que es el punto de entrada y va
-llamando a funciones internas hasta devolver el vector de "ProgramConfig". 
+En Parser El constructor solo guarda el path, no
+abre nada; el trabajo de verdad va en load(), que es el punto de entrada y va
+llamando a funciones internas hasta devolver el vector de ProgramConfig. 
 
-Le he dado vueltas a que el path queda en dos sitios ("m_config_file" en
-"Taskmaster" y "m_path" en el "Parser"). Pensé en quitar uno con un getter, pero
+Le he dado vueltas a que el path queda en dos sitios (m_config_file en
+Taskmaster y m_path en el Parser). Pensé en quitar uno con un getter, pero
 eso acopla las clases solo para un log, así que lo dejo como está: es un dato de
 entrada inmutable, no estado mutable que haya que sincronizar, así que no es una
 duplicación que importe.
 
-He metido un "loadProgramsConf()" temporal que simula su salida: devuelve el vector de "ProgramConfig" ya relleno
+He metido un loadProgramsConf() temporal que simula su salida: devuelve el vector de ProgramConfig ya relleno
 
-Pendiente: eempezar el "ProcessManager", qwue como deje en la anterioir entrada seria parte del "run()" de taskmaster
+Pendiente: eempezar el ProcessManager, qwue como deje en la anterioir entrada seria parte del run() de taskmaster
 
 
 ### 2026-06-02
 
-creada e implementada la clase "Program": representa un proceso supervisado,
-guarda su "ProgramConfig" + el estado de runtime (pid, state, reintentos). No se
-lanza ni se monitoriza solo, eso es del "ProcessManager"; solo lleva su ficha.
+creada e implementada la clase Program: representa un proceso supervisado,
+guarda su ProgramConfig + el estado de runtime (pid, state, reintentos). No se
+lanza ni se monitoriza solo, eso es del ProcessManager; solo lleva su ficha.
 
 En vez de setters crudos uso transiciones (started, exited, stopped...): son
-setters pero agrupados por evento en vez de por campo, así el "Program" nunca
+setters pero agrupados por evento en vez de por campo, así el Program nunca
 queda a medias y nadie de fuera depende de cómo guardo el estado por dentro.
-Copia borrada (cada "Program" es un proceso único) pero move por defecto, que
-si no no entra en el vector del "ProcessManager".
+Copia borrada (cada Program es un proceso único) pero move por defecto, que
+si no no entra en el vector del ProcessManager.
 
 
 ### 2026-06-14
@@ -279,7 +279,7 @@ el monitor() detectrara las muertes, salidas, etc y sera quien loguee
 
 el control de eventos por parte de taskmaster usa el logger/consola para registrar el funcionamiento de los procesos lanzados, la salida ya sea de error o estandar se gestionara fuera del logger/consola, para no ensuciar la salida de estos.
 
-En la configuracion se previo un path para salida/err de cada programa, en caso de que no se ponga nada, ".empty()", se valora derivar a /dev/null o lo mas optimo, automaticamente crear un fichero o ficheros para cada proceso, de momento co o no esta implemntado el parser, vamos a dejar el dev/null para borrarlpo ,as adelante porque cuando se implemente el automatismo sera codigo muerto.
+En la configuracion se previo un path para salida/err de cada programa, en caso de que no se ponga nada, .empty(), se valora derivar a /dev/null o lo mas optimo, automaticamente crear un fichero o ficheros para cada proceso, de momento co o no esta implemntado el parser, vamos a dejar el dev/null para borrarlpo ,as adelante porque cuando se implemente el automatismo sera codigo muerto.
 
 ponemos la flag onexec para que se cierre cuando se ejecute, asi evitamos cierre manual.
 
@@ -313,32 +313,32 @@ A partir de aqui que era mas probar diferentes opciones y realizar tareas tempor
 ### 2026-06-20
 
 Empezado el bonus de capturar la salida de los hijos con pipes. He tocado
-"launch" y "setupChild" en el "ProccessManager".
+launch y setupChild en el ProccessManager.
 
-Ahora antes del fork creo dos pipes (stdout y stderr) con "pipe2" y O_CLOEXEC,
-asi no se filtran a otros hijos y se cierran solos en el exec. El "setupChild"
+Ahora antes del fork creo dos pipes (stdout y stderr) con pipe2 y O_CLOEXEC,
+asi no se filtran a otros hijos y se cierran solos en el exec. El setupChild
 ya no abre ficheros, solo hace el dup2 de los write-ends del pipe al STDOUT/STDERR
 del hijo. El abrir y escribir los logfiles pasa a ser cosa del padre, como hace
 supervisor, que se mete en medio del flujo.
 
-Un par de detalles que dejo a proposito: los dos "pipe2" van por separado y no
-con un "||", porque si falla el segundo el primero queda abierto y hay que
+Un par de detalles que dejo a proposito: los dos pipe2 van por separado y no
+con un ||, porque si falla el segundo el primero queda abierto y hay que
 cerrarlo a mano antes del return. Y el O_NONBLOCK lo pongo solo en los read-ends
-del padre con "fcntl"; el write del hijo se queda bloqueante para tener
+del padre con fcntl; el write del hijo se queda bloqueante para tener
 backpressure y no perder salida si el padre lee lento.
 
 Compila y arranca, PERO esto esta a medias y hay que tenerlo claro: el padre
 todavia NO cierra los write-ends ni se guarda los read-ends, sigue con
-started(pid). Asi que de momento cada "launch" fuga los 4 fds, y cuando monte la
+started(pid). Asi que de momento cada launch fuga los 4 fds, y cuando monte la
 lectura el read-end no daria EOF porque el padre sigue siendo escritor. Es el
 siguiente paso, no un olvido.
 
 Siguiente paso, cerrar el lado padre:
-- Meter el wrapper RAII "Fd" para los fds de larga vida del lado padre, que se
-cierren solos al morir o destruirse el "Program", con move que deja el origen
+- Meter el wrapper RAII Fd para los fds de larga vida del lado padre, que se
+cierren solos al morir o destruirse el Program, con move que deja el origen
 en -1 para no hacer doble close.
 - Ampliar el transition a started(pid, stdout_fd, stderr_fd) para que el
-"Program se quede los read-ends en propiedad.
+Program se quede los read-ends en propiedad.
 - En el padre, cerrar los write-ends y meter los read-ends en el poll.
 - Lado lectura: leer hasta EAGAIN y volcar al logfile, y al ver EOF (read == 0)
 cerrar el read-end y sacarlo del poll set.
@@ -396,29 +396,29 @@ Aviso para mi yo del futuro: ahora tengo dos cosas escuchando a la vez (el poll
 de stdin en el Taskmaster y el epoll en el ProccessManager), pero es temporal. El
 proyecto acaba con UN solo bucle, que se monta cuando meta el socket (paso 2).
 
-De hoy: metido el "Fd" en el "Program", los logfiles los abre el padre, y creado
+De hoy: metido el Fd en el Program, los logfiles los abre el padre, y creado
 el epoll registrando los pipes. Falta leer de los pipes y volcar al fichero.
 
 
 ### 2026-06-20
 
-Implementado el lado de lectura de los pipes con epoll. El "monitor()" hace un
-"epoll_wait" con timeout 0 (no bloquea, solo mira si hay salida lista y vuelve),
-y por cada read-end con datos llama a "readFromChild", que lee hasta EAGAIN y
+Implementado el lado de lectura de los pipes con epoll. El monitor() hace un
+epoll_wait con timeout 0 (no bloquea, solo mira si hay salida lista y vuelve),
+y por cada read-end con datos llama a readFromChild, que lee hasta EAGAIN y
 vuelca al logfile de ese programa. Al ver EOF (read == 0) cierra el read-end y lo
 saca del epoll. El lookup fd->Program de momento es lineal, ya lo afinare.
 
 Me ha costado entender el epoll viniendo de poll, asi que lo apunto. Con poll yo
 mantenia el array de TODOS los fds y lo recorria entero preguntando cual estaba
 listo. Con epoll la lista de fds la guarda el KERNEL (se la di una vez con
-epoll_ctl), y el "epoll_wait" me devuelve SOLO los que estan listos, no todos. El
-"events[64]" no es mi lista de fds, es un buzon vacio donde el kernel me escribe
-los que han disparado. Y el "events[i].data.fd" es la etiqueta que yo mismo puse
+epoll_ctl), y el epoll_wait me devuelve SOLO los que estan listos, no todos. El
+events[64] no es mi lista de fds, es un buzon vacio donde el kernel me escribe
+los que han disparado. Y el events[i].data.fd es la etiqueta que yo mismo puse
 al registrar el fd, el kernel me la devuelve para saber cual leer.
 
 O sea que el vector de fds que pensaba que tendria que llevar a mano NO existe, lo
 lleva el kernel. Lo unico mio que se queda es la tablita fd->Program para traducir
-"el fd 7 tiene datos" a "esto es nginx".
+el fd 7 tiene datos a esto es nginx.
 
 Y esto encaja con lo de los dos bucles: cuando llegue el socket (paso 2), el poll
 de stdin desaparece y meto el socket, el signalfd y los pidfds en este mismo
@@ -428,13 +428,13 @@ epoll. Todo a un solo epoll_wait, sin ningun array de fds mio.
 ### 2026-06-20
 
 Funcionando la captura de salida por pipes de punta a punta. La salida del hijo
-viaja pipe -> epoll la detecta -> el padre lee con "readFromChild" -> escribe al
+viaja pipe -> epoll la detecta -> el padre lee con readFromChild -> escribe al
 logfile de ese programa. Probado con los stubs (greeter, lister, errtest) y cada
 uno escribe en su fichero. Ya no es el dup2 directo a fichero, ahora el padre
 esta en medio, que es lo que hace falta para el attach y el cliente/servidor.
 
-El fallo de que salieran vacios era tonto: tenia la llamada a "monitor()"
-comentada en el "run()", asi que el epoll_wait nunca corria y nadie leia los
+El fallo de que salieran vacios era tonto: tenia la llamada a monitor()
+comentada en el run(), asi que el epoll_wait nunca corria y nadie leia los
 pipes. Descomentada y listo.
 
 
@@ -443,9 +443,9 @@ pipes. Descomentada y listo.
 El pidfd funcionando, ya detecto las muertes de los hijos. Cada programa se queda
 su pidfd (otro fd) que el epoll vigila, y cuando el hijo muere el fd se vuelve
 legible. En el monitor miro si el fd que disparo es un pidfd (findByPidFd) y si
-lo es llamo a "handleDeath", que reapea con waitid(P_PIDFD) y saca el status.
+lo es llamo a handleDeath, que reapea con waitid(P_PIDFD) y saca el status.
 
-Probado matando un sleeper con kill: sale en el log "killed by signal 15", y los
+Probado matando un sleeper con kill: sale en el log killed by signal 15, y los
 otros stubs salen con su codigo (greeter 0, errtest 2). Distingue bien exit normal
 de muerte por señal. Y lo importante, ya no deja zombies, el waitid los recolecta.
 
@@ -476,3 +476,33 @@ Para saber si debemos relanzarlo miramos su variable autorestart, si es never = 
 si es una salida inexperada o es por un exitcode contemplado.
 
 No estoy logeando los test, voy a intentar mejorar eso
+
+
+### 2026-06-28
+
+Metido el starttime y el startretries para que el autorestart no se vuelva loco.
+
+Ahora el Program guarda la hora a la que arranco y empieza en estado Starting,
+no Running. En el monitor, el confirmStarted mira cuales llevan vivos su
+starttime y los pasa a Running, reseteando el contador de reintentos.
+
+La gracia esta en el handleDeath: si el programa muere DENTRO de su ventana de
+starttime, lo cuento como que no consiguio arrancar, asi que sumo un intento y si
+se pasa de startretries lo mando a Fatal y me rindo. Si muere ya estando estable
+(paso su starttime), entonces ya aplico la politica normal de always/never/unexpected.
+
+Importante esto: el fallo de arranque y la muerte normal van por caminos
+separados. En el fallo de arranque no miro la politica para nada, siempre
+reintento hasta el limite. La politica solo entra cuando el programa murio ya
+estable.
+
+Probado con un failer que es un /bin/false con always: arranca, muere, lo
+reintenta un par de veces y luego giving up a Fatal. Ya no se relanza infinito.
+
+DEBUG: con starttime=1 entraba en bucle. El problema es que
+mi poll de stdin tarda hasta 1 segundo en enterarse de que un hijo murio, asi que
+un programa que muere al instante parecia que habia vivido 1 segundo entero. Con
+starttime=1 eso bastaba para que lo contara como arranco bien en vez de fallo
+al arrancar, no sumaba el intento y se relanzaba sin parar. Subiendo el starttime
+a 3 ya va bien, porque la ventana es mas larga que el retardo del poll, no hay miedo 
+al futuro porque el bucle de poll sera eliminado paulatinamente.
