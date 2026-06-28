@@ -506,3 +506,31 @@ starttime=1 eso bastaba para que lo contara como arranco bien en vez de fallo
 al arrancar, no sumaba el intento y se relanzaba sin parar. Subiendo el starttime
 a 3 ya va bien, porque la ventana es mas larga que el retardo del poll, no hay miedo 
 al futuro porque el bucle de poll sera eliminado paulatinamente.
+
+### 2026-06-28
+
+Creada la clase EventLoop, que envuelve toda la mecanica del epoll (crear,
+registrar fds con add/remove, y esperar con wait). La idea es que el Taskmaster
+sea el dueño del bucle pero sin mancharse con las syscalls del epoll: el
+EventLoop hace la mecanica y el Taskmaster solo enruta. Asi el facade se
+mantiene limpio.
+
+El wait devuelve un vector con los fds que estan listos, y a proposito NO sabe
+que significa cada uno (si es un pipe, un pidfd, stdin...). Eso lo decide quien lo
+use. Asi el EventLoop sirve para cualquier conjunto de fds.
+
+El epoll es un fd: cuando haces epoll_create1 el kernel crea la instancia y te
+devuelve un fd que es el asa para referirte a ella en epoll_ctl y epoll_wait. Como
+es un fd de verdad, hay que cerrarlo, asi que lo guardo en un Fd y se cierra
+solo.
+
+De momento la clase esta creada pero sin enchufar. Siguiente: que el
+ProccessManager la use en vez de su epoll propio, y luego moverla al Taskmaster.
+
+IMPORTANTE!!!!!!!!!!!!!!!! para el siguiente paso: ahora la mecanica del epoll 
+esta duplicada, la tengoen el "ProccessManager" (su m_epoll, addToEpoll, removeFromEpoll 
+y el epoll_wait del monitor) y tambien en el "EventLoop". Hay que sacarla del manager (y de
+cualquier otra clase que la tenga) y dejar que solo el "EventLoop" la lleve. El
+manager pasaria a usar un "EventLoop" en vez de su epoll propio: sus addToEpoll
+serian eventloop.add(), etc. Asi la mecanica del epoll vive en un unico sitio y
+nadie mas toca epoll_ctl ni epoll_wait directamente.

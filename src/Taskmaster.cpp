@@ -33,7 +33,8 @@ void Taskmaster::run() {
     struct pollfd pfd;
     pfd.fd     = STDIN_FILENO;
     pfd.events = POLLIN;
-
+    
+    std::cout << "taskmaster> " << std::flush;
     while (m_running) {
         int ready = poll(&pfd, 1, 1000);
 
