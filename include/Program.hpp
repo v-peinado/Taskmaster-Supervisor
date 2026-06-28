@@ -23,7 +23,7 @@ class Program {
 
         // Setters // Transitions
 
-        void started(pid_t pid, int stdout_fd, int stderr_fd, int stdout_log, int stderr_log);
+        void started(pid_t pid, int stdout_fd, int stderr_fd, int stdout_log, int stderr_log, int pidfd);
         void exited();
         void stopped(); 
         void setFatalError();
@@ -38,10 +38,12 @@ class Program {
         int getRestarts() const;
         int getStdoutLogFd() const;
         int getStderrLogFd() const;
+        int getPidFd() const;
 
         //aux
         void closeStdout();
         void closeStderr();
+        void closePidFd();
 
     private:
 
@@ -53,4 +55,5 @@ class Program {
         Fd              m_stderr;
         Fd              m_stdout_log;
         Fd              m_stderr_log;
+        Fd              m_pidfd;
 };

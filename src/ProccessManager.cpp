@@ -7,6 +7,16 @@
 #include <fcntl.h>
 #include <csignal>
 #include <sys/epoll.h>
+#include <sys/syscall.h>
+#include <sys/wait.h>
+
+#ifndef P_PIDFD    // dependiendo de la version de glibc puede no tener esta macro definida
+#define P_PIDFD
+#endif
+
+#ifndef SYS_pidfd_open
+#define SYS_pidfd_open 434
+#endif
 
 // Constructors//destructor
 
@@ -95,13 +105,16 @@ void ProccessManager::launch(Program& program) {
     fcntl(out_pipe[0], F_SETFL, O_NONBLOCK);
     fcntl(err_pipe[0], F_SETFL, O_NONBLOCK);
 
+    int pidfd = syscall(SYS_pidfd_open, pid, 0);
+
     int log_out = openLogFile(cfg.stdout_file);
     int log_err = openLogFile(cfg.stderr_file);
 
-    program.started(pid, out_pipe[0], err_pipe[0], log_out, log_err);
+    program.started(pid, out_pipe[0], err_pipe[0], log_out, log_err, pidfd);
 
     addToEpoll(out_pipe[0]);
     addToEpoll(err_pipe[0]);
+    addToEpoll(pidfd);
 
     m_logger.log(Logger::LogLevel::Info,
                  "Started " + cfg.name + " (pid " + std::to_string(pid) + ")");
@@ -109,11 +122,16 @@ void ProccessManager::launch(Program& program) {
 
 void ProccessManager::monitor() {
     struct epoll_event events[64];
-
     int n = epoll_wait(m_epoll.getFd(), events, 64, 0);
 
     for (int i = 0; i < n; i++) {
         int fd = events[i].data.fd;
+
+        Program* program = findByPidFd(fd);
+        if (program) {
+            handleDeath(*program);
+            continue;
+        }
         readFromChild(fd);
     }
 }
@@ -123,6 +141,36 @@ Program* ProccessManager::findByReadFd(int fd) {
         if (program.getStdoutFd() == fd || program.getStderrFd() == fd)
             return &program;
     return nullptr;
+}
+
+Program* ProccessManager::findByPidFd(int fd) {
+    for (auto& program : m_programs)
+        if (program.getPidFd() == fd)
+            return &program;
+    return nullptr;
+}
+
+void ProccessManager::handleDeath(Program& program) {
+    int pidfd = program.getPidFd();
+
+    siginfo_t info;
+    info.si_pid = 0;
+    waitid(P_PIDFD, pidfd, &info, WEXITED);
+
+    if (info.si_code == CLD_EXITED)
+        m_logger.log(Logger::LogLevel::Info,
+            program.getProgramConfig().name + " exited, code " +
+            std::to_string(info.si_status));
+    else
+        m_logger.log(Logger::LogLevel::Info,
+            program.getProgramConfig().name + " killed by signal " +
+            std::to_string(info.si_status));
+
+    removeFromEpoll(pidfd);
+    program.closePidFd();
+    program.exited();
+
+    // autorestart
 }
 
 void ProccessManager::readFromChild(int fd) {

@@ -28,20 +28,26 @@ int Program::getStdoutLogFd() const { return m_stdout_log.getFd();}
 
 int Program::getStderrLogFd() const { return m_stderr_log.getFd(); }
 
+int Program::getPidFd() const { return m_pidfd.getFd(); }
+
 //aux
 
 void Program::closeStdout() { m_stdout.resetFd(); }
+
 void Program::closeStderr() { m_stderr.resetFd(); }
+
+void Program::closePidFd() { m_pidfd.resetFd(); }
 
 // Setters // Transitions
 
-void Program::started(pid_t pid, int stdout_fd, int stderr_fd, int stdout_log, int stderr_log) {
+void Program::started(pid_t pid, int stdout_fd, int stderr_fd, int stdout_log, int stderr_log, int pidfd) {
     m_pid = pid;
     m_state = State::Running;
     m_stdout = Fd(stdout_fd);
     m_stderr = Fd(stderr_fd);
     m_stdout_log = Fd(stdout_log);
     m_stderr_log = Fd(stderr_log);
+    m_pidfd      = Fd(pidfd);
 }
 
 void Program::exited() {

@@ -38,6 +38,8 @@ class ProccessManager {
         //monitor aux
         void readFromChild(int fd);
         Program* findByReadFd(int fd);
+        Program* findByPidFd(int fd);
+        void     handleDeath(Program& program);
 
         //epoll aux
         void addToEpoll(int fd);

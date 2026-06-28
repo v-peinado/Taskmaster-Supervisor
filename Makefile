@@ -10,7 +10,7 @@ RED		= 	\033[31m
 NAME	= taskmaster
 #Compiler
 CC		= c++
-CFLAGS	=  -std=c++20 #-Wall -Wextra -Werror #-Wc++11-compat -Werror=c++11-compat
+CFLAGS	=  -std=c++20 -D_GNU_SOURCE#-Wall -Wextra -Werror #-Wc++11-compat -Werror=c++11-compat
 #CFLAGS	+= -g3 -fsanitize=address
 RM		= rm -f
 
