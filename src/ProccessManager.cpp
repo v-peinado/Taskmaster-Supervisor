@@ -24,7 +24,7 @@ ProccessManager::ProccessManager(Logger& logger)
     : m_logger(logger)
     , m_epoll(epoll_create1(EPOLL_CLOEXEC)) {
         if (!m_epoll.validFd())
-            std::cout << "ERROR DE EPOLL" << std::endl;//no esta implementado trycatch todavia throw std::runtime_error("epoll_create1 failed");
+            throw std::runtime_error("epoll_create1 failed");
     }
 
 

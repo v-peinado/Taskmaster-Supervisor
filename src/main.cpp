@@ -5,20 +5,33 @@
 #include <unistd.h>
 
 int main(int argc, char **argv) {
-    if(argc != 2) {
+    if (argc != 2) {
         std::cout << "./taskmaster [valid config file]" << std::endl;
         return 1;
     }
-    std::unique_ptr<Logger> logger;
-    
-    Logger::Config logger_config {.log_dir = "./logs/", .log_file = "app.log"};
-    logger = std::make_unique<Logger>(logger_config);
-    
-    Taskmaster::Config taskmaster_config {.config_file = argv[1]};
-    Taskmaster taskmaster(taskmaster_config, *logger);
-    taskmaster.init();
-    taskmaster.run();
-    //pause(); // para que no se cierre
 
-    return 0;
+    std::unique_ptr<Logger> logger;
+    try {
+        Logger::Config logger_config {
+            .log_dir = "./logs/",
+            .log_file = "app.log",
+        };
+
+        logger = std::make_unique<Logger>(logger_config);
+
+        Taskmaster::Config taskmaster_config {.config_file = argv[1]};
+        Taskmaster taskmaster(taskmaster_config, *logger);
+
+        taskmaster.init();
+        taskmaster.run();
+        return 0;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Fatal error: " << e.what() << '\n';
+        if (logger && logger->isOpen()) {
+            logger->log(Logger::LogLevel::Error, e.what());
+            logger->log(Logger::LogLevel::Info, "Quitting.");
+        }
+        return 1;
+    }
 }
