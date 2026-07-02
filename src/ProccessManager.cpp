@@ -190,6 +190,10 @@ bool ProccessManager::shouldRestart(const Program& program, bool by_signal, int 
 
 void ProccessManager::handleDeath(Program& program) {
     int pidfd = program.getPidFd();
+    if (pidfd < 0) {
+        m_logger.log(Logger::LogLevel::Error,
+            "pidfd_open failed for " + program.getProgramConfig().name + " (kernel too old?)");
+    }
 
     siginfo_t info;
     info.si_pid = 0;
