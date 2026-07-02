@@ -8,6 +8,7 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <EventLoop.hpp>
 
 class Logger;
 
@@ -36,6 +37,7 @@ class Taskmaster {
         Logger& m_logger;
         Parser m_parser;
         //Shell m_shell;
+        EventLoop m_event_loop;
         ProccessManager m_proccess_manager;
         std::vector<ProgramConfig> m_programs_conf;
         bool        m_running;

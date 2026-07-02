@@ -12,6 +12,7 @@ Taskmaster::Taskmaster(const Config& cfg, Logger& logger)
     : m_config_file(cfg.config_file)
     , m_logger(logger)
     , m_parser(cfg.config_file)
+    , m_event_loop() 
     , m_proccess_manager(logger)
     {}
 
@@ -33,7 +34,7 @@ void Taskmaster::run() {
     struct pollfd pfd;
     pfd.fd     = STDIN_FILENO;
     pfd.events = POLLIN;
-    
+
     std::cout << "taskmaster> " << std::flush;
     while (m_running) {
         int ready = poll(&pfd, 1, 1000);
