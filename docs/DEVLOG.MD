@@ -507,7 +507,7 @@ al arrancar, no sumaba el intento y se relanzaba sin parar. Subiendo el starttim
 a 3 ya va bien, porque la ventana es mas larga que el retardo del poll, no hay miedo 
 al futuro porque el bucle de poll sera eliminado paulatinamente.
 
-### 2026-06-28
+### 2026-07-1
 
 Creada la clase EventLoop, que envuelve toda la mecanica del epoll (crear,
 registrar fds con add/remove, y esperar con wait). La idea es que el Taskmaster
@@ -534,3 +534,9 @@ cualquier otra clase que la tenga) y dejar que solo el "EventLoop" la lleve. El
 manager pasaria a usar un "EventLoop" en vez de su epoll propio: sus addToEpoll
 serian eventloop.add(), etc. Asi la mecanica del epoll vive en un unico sitio y
 nadie mas toca epoll_ctl ni epoll_wait directamente.
+
+### 2026-07-01
+
+-Blindado el pidfd_open comprobando el retorno: si falla (kernel viejo) lo 
+logueo en vez de quedarme sin deteccion de muerte en silencio.
+ Red para la defensa por si la maquina tiene kernel mas viejo de lo que creo.

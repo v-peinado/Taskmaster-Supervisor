@@ -53,16 +53,6 @@ std::vector<ProgramConfig> Parser::loadProgramsConf() {
         .stderr_file = "./logs/sleeper.stderr",
     });
 
-    programs.push_back(ProgramConfig{
-    .name        = "failer",
-    .cmd         = "/bin/false",        // muere inmediato, codigo 1
-    .autostart   = true,
-    .autorestart = "always",
-        .startretries = 3,
-    .starttime   = 3,  
-    .stdout_file = "./logs/failer.stdout",
-    .stderr_file = "./logs/failer.stderr",
-});
 
     return programs;
 }
