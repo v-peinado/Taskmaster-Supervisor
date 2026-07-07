@@ -1,6 +1,7 @@
 #include "ProccessManager.hpp"
 #include <sstream>
 #include "Logger.hpp"
+#include "EventLoop.hpp"
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -20,12 +21,11 @@
 
 // Constructors//destructor
 
-ProccessManager::ProccessManager(Logger& logger) 
+ProccessManager::ProccessManager(Logger& logger, EventLoop& event_loop) 
     : m_logger(logger)
-    , m_epoll(epoll_create1(EPOLL_CLOEXEC)) {
-        if (!m_epoll.validFd())
-            throw std::runtime_error("epoll_create1 failed");
-    }
+    , m_event_loop(event_loop)
+    {}
+    
 
 
 // public methods
@@ -120,21 +120,17 @@ void ProccessManager::launch(Program& program) {
 
     program.started(pid, std::move(io));
 
-    addToEpoll(out_pipe[0]);
-    addToEpoll(err_pipe[0]);
-    addToEpoll(pidfd);
+    m_event_loop.add(out_pipe[0]);
+    m_event_loop.add(err_pipe[0]);
+    m_event_loop.add(pidfd);
 
     m_logger.log(Logger::LogLevel::Info,
                  "Started " + cfg.name + " (pid " + std::to_string(pid) + ")");
 }
 
 void ProccessManager::monitor() {
-    struct epoll_event events[64];
-    int n = epoll_wait(m_epoll.getFd(), events, 64, 0);
-
-    for (int i = 0; i < n; i++) {
-        int fd = events[i].data.fd;
-
+    std::vector<int> ready = m_event_loop.wait(0);
+    for (int fd : ready) {
         Program* program = findByPidFd(fd);
         if (program) {
             handleDeath(*program);
@@ -210,7 +206,7 @@ void ProccessManager::handleDeath(Program& program) {
         m_logger.log(Logger::LogLevel::Info,
             program.getProgramConfig().name + " exited, code " + std::to_string(code));
 
-    removeFromEpoll(pidfd);
+    m_event_loop.remove(pidfd);
     program.closePidFd();
     program.exited();
 
@@ -256,7 +252,7 @@ void ProccessManager::readFromChild(int fd) {
                 write(log_fd, buf, n);
         }
         else if (n == 0) {
-            removeFromEpoll(fd);
+            m_event_loop.remove(fd);
             if (is_stdout)
                 program->closeStdout();
             else
@@ -267,25 +263,6 @@ void ProccessManager::readFromChild(int fd) {
             break;
         }
     }
-}
-
-//epoll aux
-
-void ProccessManager::addToEpoll(int fd) {
-    if (fd < 0)
-        return;
-
-    struct epoll_event ev{};
-    ev.events  = EPOLLIN;
-    ev.data.fd = fd;
-    epoll_ctl(m_epoll.getFd(), EPOLL_CTL_ADD, fd, &ev);
-}
-
-void ProccessManager::removeFromEpoll(int fd) {
-    if (fd < 0)
-        return;
-
-    epoll_ctl(m_epoll.getFd(), EPOLL_CTL_DEL, fd, nullptr);
 }
 
 // launch aux

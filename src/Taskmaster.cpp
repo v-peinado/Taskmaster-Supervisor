@@ -13,7 +13,7 @@ Taskmaster::Taskmaster(const Config& cfg, Logger& logger)
     , m_logger(logger)
     , m_parser(cfg.config_file)
     , m_event_loop() 
-    , m_proccess_manager(logger)
+    , m_proccess_manager(logger, m_event_loop)
     {}
 
 // Logger - Public meths

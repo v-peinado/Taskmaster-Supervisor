@@ -5,11 +5,12 @@
 #include "Fd.hpp"
 
 class Logger;
+class EventLoop;
 
 class ProccessManager {
     public:
         ProccessManager() = delete;
-        ProccessManager(Logger& logger);
+        ProccessManager(Logger& logger, EventLoop& event_loop);
         ~ProccessManager() = default;
         ProccessManager(const ProccessManager&) = delete;
         ProccessManager& operator=(const ProccessManager&) = delete;
@@ -30,8 +31,8 @@ class ProccessManager {
  
     private:
         Logger&                 m_logger;
+        EventLoop&              m_event_loop;
         std::vector<Program>    m_programs;
-        Fd                      m_epoll;
 
         void launch(Program& program);
 
@@ -42,10 +43,6 @@ class ProccessManager {
         void handleDeath(Program& program);
         bool shouldRestart(const Program& program, bool by_signal, int code);
         void confirmStarted();
-
-        //epoll aux
-        void addToEpoll(int fd);
-        void removeFromEpoll(int fd);
 
         // launch aux
         std::vector<std::string> splitCmd(const std::string& cmd);
