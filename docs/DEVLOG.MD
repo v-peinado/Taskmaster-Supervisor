@@ -568,3 +568,17 @@ falta matar el sleep con kill pid, se ve que muere y se relanza
 
 [07/07/2026-21:33:37] [ INFO ] - Application: sleeper killed by signal 15
 [07/07/2026-21:33:37] [ INFO ] - Application: Started sleeper (pid 92158)
+
+Seguimos con la estrategia de factorizar todo, añadimos una clase solo para signals, 
+seguire la estrategia que he seguido en otros proyectos, ya que vamos a utilizar un bucle de eventos,
+tratemos las señales como un fd mas, quitando asi asincronismo al proyecto.
+
+El proceso es facil, se bloquean las señales(mas bien  se quedan pendientes) con sigprocmask,
+con signalfd se recogen las señales previamente añadidas a la estructura,
+cuando llegue una señal y el fd sea legible se usara read para leer siginfo y saber que señal llega.
+
+De momento se crea la clase que representa el manejo de señales, pero no esta dentro del loop.
+
+Se añaden metodos para retornar el fd y poder meterlo en el loop y readsignal que contendra read()
+
+Pendiente evitar que los hijos hereden mask
