@@ -540,3 +540,31 @@ nadie mas toca epoll_ctl ni epoll_wait directamente.
 -Blindado el pidfd_open comprobando el retorno: si falla (kernel viejo) lo 
 logueo en vez de quedarme sin deteccion de muerte en silencio.
  Red para la defensa por si la maquina tiene kernel mas viejo de lo que creo.
+
+ ### 2026-7-7
+
+El ProccessManager ya no tiene epoll propio, usa un EventLoop que le inyecta el Taskmaster por referencia.
+Quitados el m_epoll, addToEpoll y removeFromEpoll del manager; ahora son m_event_loop.add()/remove().
+El epoll_wait sale del monitor, ahora es m_event_loop.wait(0) y recorro los fds que devuelve.
+El Taskmaster pasa a ser dueño del EventLoop (declarado antes que el manager para que este construido cuando se lo inyecto).
+Sin cambio de comportamiento: los stubs siguen escribiendo y el pidfd sigue detectando muertes sin zombies.
+Con esto la mecanica del epoll vive solo en el EventLoop, se acabo la duplicacion.
+
+
+arrancamos con el config simulado 
+
+Se observa en los logs [07/07/2026-21:31:59] [ INFO ] - Application: Taskmaster is running
+[07/07/2026-21:31:59] [ INFO ] - Application: The config file is config.yaml
+[07/07/2026-21:31:59] [ WARNING ] - Application: The conf file is not validated
+[07/07/2026-21:31:59] [ INFO ] - Application: Started greeter (pid 91926)
+[07/07/2026-21:31:59] [ INFO ] - Application: Started lister (pid 91927)
+[07/07/2026-21:31:59] [ INFO ] - Application: Started errtest (pid 91928)
+[07/07/2026-21:31:59] [ INFO ] - Application: Started sleeper (pid 91929)
+[07/07/2026-21:32:00] [ INFO ] - Application: greeter exited, code 0
+[07/07/2026-21:32:00] [ INFO ] - Application: errtest exited, code 2
+[07/07/2026-21:32:00] [ INFO ] - Application: lister exited, code 0
+
+falta matar el sleep con kill pid, se ve que muere y se relanza
+
+[07/07/2026-21:33:37] [ INFO ] - Application: sleeper killed by signal 15
+[07/07/2026-21:33:37] [ INFO ] - Application: Started sleeper (pid 92158)
