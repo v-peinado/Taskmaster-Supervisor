@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 #include <EventLoop.hpp>
+#include "SignalFd.hpp"
 
 class Logger;
 
@@ -38,6 +39,7 @@ class Taskmaster {
         Parser m_parser;
         //Shell m_shell;
         EventLoop m_event_loop;
+        SignalFd m_signal_fd;  
         ProccessManager m_proccess_manager;
         std::vector<ProgramConfig> m_programs_conf;
         bool        m_running;
