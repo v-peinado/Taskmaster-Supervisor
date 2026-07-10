@@ -32,7 +32,7 @@ void Taskmaster::run() {
     m_running = true;
     std::string line;
 
-    m_event_loop.add(m_signal_fd.getFd());
+    m_event_loop.add(m_signal_fd.getFd(), EventLoop::EventType::SignalReceived);
     struct pollfd pfd;
     pfd.fd     = STDIN_FILENO;
     pfd.events = POLLIN;

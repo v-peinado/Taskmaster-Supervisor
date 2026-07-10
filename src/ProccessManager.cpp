@@ -120,25 +120,26 @@ void ProccessManager::launch(Program& program) {
 
     program.started(pid, std::move(io));
 
-    m_event_loop.add(out_pipe[0]);
-    m_event_loop.add(err_pipe[0]);
-    m_event_loop.add(pidfd);
+    m_event_loop.add(out_pipe[0], EventLoop::EventType::ProcessOutputReady);
+    m_event_loop.add(err_pipe[0], EventLoop::EventType::ProcessOutputReady);
+    m_event_loop.add(pidfd,       EventLoop::EventType::ProcessExited);
 
     m_logger.log(Logger::LogLevel::Info,
                  "Started " + cfg.name + " (pid " + std::to_string(pid) + ")");
 }
 
 void ProccessManager::monitor() {
-    std::vector<int> ready = m_event_loop.wait(0);
-    for (int fd : ready) {
-        Program* program = findByPidFd(fd);
-        if (program) {
-            handleDeath(*program);
-            continue;
+    std::vector<EventLoop::Event> ready = m_event_loop.wait(0);
+    for (const EventLoop::Event& ev : ready) {
+        if (ev.type == EventLoop::EventType::ProcessExited) {
+            Program* program = findByPidFd(ev.fd);
+            if (program)
+                handleDeath(*program);
         }
-        readFromChild(fd);
+        else if (ev.type == EventLoop::EventType::ProcessOutputReady) {
+            readFromChild(ev.fd);
+        }
     }
-    confirmStarted();
 }
 
 void ProccessManager::confirmStarted() {

@@ -10,7 +10,8 @@ Para llevar un buen registro historico intentaremos llevar una buena coherencia 
 | chore      | CMake, dependencias, estructura de carpetas        
 | test       | Tests                                              
 | style      | Formato, typos, nombres sin cambiar lógica         
-| perf       | Mejora de rendimiento        
+| perf       | Mejora de rendimiento
+| wip        | Compila, pero todavia no esta terminado el ca,bio           
 
 ## Requerimientos mandatory
 
@@ -528,10 +529,10 @@ De momento la clase esta creada pero sin enchufar. Siguiente: que el
 ProccessManager la use en vez de su epoll propio, y luego moverla al Taskmaster.
 
 IMPORTANTE!!!!!!!!!!!!!!!! para el siguiente paso: ahora la mecanica del epoll 
-esta duplicada, la tengoen el "ProccessManager" (su m_epoll, addToEpoll, removeFromEpoll 
-y el epoll_wait del monitor) y tambien en el "EventLoop". Hay que sacarla del manager (y de
-cualquier otra clase que la tenga) y dejar que solo el "EventLoop" la lleve. El
-manager pasaria a usar un "EventLoop" en vez de su epoll propio: sus addToEpoll
+esta duplicada, la tengoen el ProccessManager (su m_epoll, addToEpoll, removeFromEpoll 
+y el epoll_wait del monitor) y tambien en el EventLoop. Hay que sacarla del manager (y de
+cualquier otra clase que la tenga) y dejar que solo el EventLoop la lleve. El
+manager pasaria a usar un EventLoop en vez de su epoll propio: sus addToEpoll
 serian eventloop.add(), etc. Asi la mecanica del epoll vive en un unico sitio y
 nadie mas toca epoll_ctl ni epoll_wait directamente.
 
@@ -582,3 +583,27 @@ De momento se crea la clase que representa el manejo de señales, pero no esta d
 Se añaden metodos para retornar el fd y poder meterlo en el loop y readsignal que contendra read()
 
 Pendiente evitar que los hijos hereden mask
+
+
+### 2026-07-07
+
+He ampliado el EventLoop para que lleve tags: ahora cada fd que registro le
+digo de que tipo de evento es (SignalReceived, InputAvailable, ProcessOutputReady,
+ProcessExited, SocketReadable). El add guarda el tipo en un map y el wait me
+devuelve el fd junto con su tipo, asi cuando algo dispara ya se que es sin tener
+que adivinarlo. El manager ya usa los tags en vez de buscar a ciegas si un fd era
+un pidfd o un pipe.
+
+Tambien he creado el SignalFd de verdad en el Taskmaster y lo he metido en el
+EventLoop.
+
+IMPORTANTE!!!!!!!!!!
+aunque compila esto todavia esta MAL y a medias: el signalfd esta 
+registrado en el EventLoop pero nadie lo consulta desde el Taskmaster, porque el run()
+sigue con el poll de stdin viejo y el manager sigue haciendo su propio wait() en
+el monitor(). O sea que el signalfd esta huerfano, si llega una señal no se maneja.
+Lo que falta es unificar: que el Taskmaster haga el wait() y reparta los eventos
+por tipo (las señales y stdin las maneja el, los pipes y pidfds se los pasa al
+manager), y quitar el poll de stdin. Ese es el siguiente paso.
+
+Esto me sirve para meter un nuevo estado de commit wip, work in progrst
