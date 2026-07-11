@@ -2,9 +2,9 @@
 #include "ProgramConfig.hpp"
 #include "Logger.hpp"
 #include "Parser.hpp"
-#include <poll.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <csignal>
 
 // Taskmaster - Constructors/Destructors
 
@@ -30,32 +30,56 @@ void Taskmaster::init(){
 
 void Taskmaster::run() {
     m_running = true;
-    std::string line;
 
     m_event_loop.add(m_signal_fd.getFd(), EventLoop::EventType::SignalReceived);
-    struct pollfd pfd;
-    pfd.fd     = STDIN_FILENO;
-    pfd.events = POLLIN;
+    m_event_loop.add(STDIN_FILENO,        EventLoop::EventType::InputAvailable);
 
     std::cout << "taskmaster> " << std::flush;
+
     while (m_running) {
-        int ready = poll(&pfd, 1, 1000);
+        std::vector<EventLoop::Event> events = m_event_loop.wait(1000);
 
-        if (ready > 0 && (pfd.revents & POLLIN)) {
-            if (!std::getline(std::cin, line)) {
-                m_running = false;
-                break;
-            }
-            if (line == "quit")
-                m_running = false;
-            else if (!line.empty())
-                m_logger.log(Logger::LogLevel::Log, line);
-
-            if (m_running)
-                std::cout << "taskmaster> " << std::flush;
+        for (const EventLoop::Event& ev : events) {
+            if (ev.type == EventLoop::EventType::SignalReceived)
+                handleSignal();
+            else if (ev.type == EventLoop::EventType::InputAvailable)
+                handleCommand();
+            else
+                m_proccess_manager.handleEvent(ev);
         }
 
-        m_proccess_manager.monitor();
+        m_proccess_manager.checkTimers();
     }
+
     m_proccess_manager.stopAll();
+}
+
+void Taskmaster::handleCommand() {
+    std::string line;
+
+    if (!std::getline(std::cin, line)) {
+        m_running = false;
+        return;
+    }
+
+    if (line == "quit")
+        m_running = false;
+    else if (!line.empty())
+        m_logger.log(Logger::LogLevel::Log, line);
+
+    if (m_running)
+        std::cout << "taskmaster> " << std::flush;
+}
+
+void Taskmaster::handleSignal() {
+    int sig = m_signal_fd.readSignal();
+
+    if (sig == SIGINT || sig == SIGTERM) {
+        m_logger.log(Logger::LogLevel::Info, "Shutdown signal received, quitting");
+        m_running = false;
+    }
+    else if (sig == SIGHUP) {
+        m_logger.log(Logger::LogLevel::Info, "SIGHUP received, reload pending");
+        // reload aqui
+    }
 }

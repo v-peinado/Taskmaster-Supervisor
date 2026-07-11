@@ -607,3 +607,64 @@ por tipo (las señales y stdin las maneja el, los pipes y pidfds se los pasa al
 manager), y quitar el poll de stdin. Ese es el siguiente paso.
 
 Esto me sirve para meter un nuevo estado de commit wip, work in progrst
+
+
+### 2026-07-11
+
+Arreglado un bug de las señales: los hijos heredaban la mascara de señales
+bloqueadas del padre (la del sigprocmask que hace el SignalFd), y el exec NO la
+resetea, solo resetea los handlers. Asi que todos mis hijos tenian el SIGTERM
+bloqueado y ignoraban el kill que les mandaba el stopAll, quedandose
+vivos como huerfanos al salir.
+
+Lo arreglo en el setupChild limpiando la mascara antes del exec, con un
+sigprocmask(SIG_SETMASK) y un set vacio. Va ahi porque el setupChild solo corre
+en el hijo; el padre tiene que seguir con las señales bloqueadas o el signalfd no
+funcionaria.
+
+Probado: ahora al salir con quit el sleeper muere de verdad y no queda ningun
+proceso colgando
+
+[11/07/2026-19:34:10] [ INFO ] - Application: errtest exited, code 2
+[11/07/2026-19:34:10] [ INFO ] - Application: lister exited, code 0
+[11/07/2026-19:34:12] [ INFO ] - Application: Sent SIGTERM to sleeper (pid 187303)
+
+### 2026-07-11
+
+Por fin unificado el bucle, se acabaron los dos mecanismos de espera. El poll de
+stdin desaparece: ahora stdin es un fd mas del EventLoop (InputAvailable), junto
+al signalfd, los pipes y los pidfds. Un solo wait() en el Taskmaster::run().
+
+El Taskmaster es el dueño del bucle y reparte por tipo de evento: las señales y
+stdin las maneja el (handleSignal y handleCommand), y los pipes y pidfds se los
+pasa al manager con handleEvent(). El manager ya no tiene bucle, solo procesa lo
+que le entregan.
+
+El monitor() del manager se parte en dos: handleEvent (procesa UN evento suyo)
+y checkTimers (los chequeos por tiempo).
+
+Dejo el timeout del wait en 1000ms a proposito, no en -1, porque el checkTimers
+tiene que correr aunque no llegue ningun evento.
+
+Probado con las tres señales:
+
+SIGTERM al taskmaster, sale limpio y se lleva a los hijos por delante:
+
+[11/07/2026-20:57:22] [ INFO ] - Application: Shutdown signal received, quitting
+[11/07/2026-20:57:22] [ INFO ] - Application: Sent SIGTERM to sleeper (pid 194692)
+
+Y el ps despues queda vacio, ya no queda ningun sleeper colgando:
+
+$ ps aux | grep sleep 1000000
+(nada)
+
+SIGHUP, se loguea y el daemon SIGUE VIVO, que es lo que queria:
+
+[11/07/2026-21:00:36] [ INFO ] - Application: SIGHUP received, reload pending
+
+Y el Ctrl-C tambien cierra el taskmaster limpiamente.
+
+Pendiente que he visto en las pruebas: el lister (un /bin/ls que sale con codigo 0)
+me acaba en Fatal con un failed to start, giving up, porque muere antes de cumplir
+su starttime. Es lo mismo que hace supervisor (asume que supervisas servicios largos,
+no comandos one-shot), asi que el codigo esta bien, pero tengo que ajustar codigo.

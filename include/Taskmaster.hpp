@@ -44,4 +44,7 @@ class Taskmaster {
         std::vector<ProgramConfig> m_programs_conf;
         bool        m_running;
         //std::vector<Program> m_programs;
+
+        void handleSignal();
+        void handleCommand();
 };

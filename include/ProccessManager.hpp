@@ -3,6 +3,7 @@
 #include "ProgramConfig.hpp"
 #include "Program.hpp"
 #include "Fd.hpp"
+#include "EventLoop.hpp"
 
 class Logger;
 class EventLoop;
@@ -23,7 +24,8 @@ class ProccessManager {
         void stopProccess(const std::string& proc_name);
         void restartProccess(const std::string& proc_name);
         void reloadManager(const std::vector<ProgramConfig>& cfg);
-        void monitor();   // waitpid, epoll, autorestart
+        void handleEvent(const EventLoop::Event& ev);
+        void checkTimers();
         void stopAll();
 
         // Getters

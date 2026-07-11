@@ -128,18 +128,21 @@ void ProccessManager::launch(Program& program) {
                  "Started " + cfg.name + " (pid " + std::to_string(pid) + ")");
 }
 
-void ProccessManager::monitor() {
-    std::vector<EventLoop::Event> ready = m_event_loop.wait(0);
-    for (const EventLoop::Event& ev : ready) {
-        if (ev.type == EventLoop::EventType::ProcessExited) {
-            Program* program = findByPidFd(ev.fd);
-            if (program)
-                handleDeath(*program);
-        }
-        else if (ev.type == EventLoop::EventType::ProcessOutputReady) {
-            readFromChild(ev.fd);
+void ProccessManager::handleEvent(const EventLoop::Event& ev) {
+    if (ev.type == EventLoop::EventType::ProcessExited) {
+        Program* program = findByPidFd(ev.fd);
+        if (program) {
+            handleDeath(*program);
         }
     }
+    else if (ev.type == EventLoop::EventType::ProcessOutputReady) {
+        readFromChild(ev.fd);
+    }
+}
+
+void ProccessManager::checkTimers() {
+    confirmStarted();
+        // stptime checkinmg
 }
 
 void ProccessManager::confirmStarted() {
@@ -167,6 +170,7 @@ Program* ProccessManager::findByPidFd(int fd) {
             return &program;
     return nullptr;
 }
+
 bool ProccessManager::shouldRestart(const Program& program, bool by_signal, int code) {
     const ProgramConfig& cfg = program.getProgramConfig();
 
@@ -279,7 +283,7 @@ std::vector<std::string> ProccessManager::splitCmd(const std::string& cmd) {
 
 void ProccessManager::setupChild(const ProgramConfig& cfg, int out_write, int err_write) {
     setsid();
-    
+
     // Need clear mask in child
     sigset_t empty;
     sigemptyset(&empty);
