@@ -279,6 +279,11 @@ std::vector<std::string> ProccessManager::splitCmd(const std::string& cmd) {
 
 void ProccessManager::setupChild(const ProgramConfig& cfg, int out_write, int err_write) {
     setsid();
+    
+    // Need clear mask in child
+    sigset_t empty;
+    sigemptyset(&empty);
+    sigprocmask(SIG_SETMASK, &empty, nullptr);
     if (cfg.umask >= 0) {
         mode_t mask = cfg.umask;
         umask(mask);
