@@ -142,7 +142,6 @@ void ProccessManager::handleEvent(const EventLoop::Event& ev) {
 
 void ProccessManager::checkTimers() {
     confirmStarted();
-        // stptime checkinmg
 }
 
 void ProccessManager::confirmStarted() {

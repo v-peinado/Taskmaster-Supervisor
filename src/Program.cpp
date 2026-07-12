@@ -48,7 +48,7 @@ void Program::setRunning() {
 
 void Program::started(pid_t pid, ProcessIO io) {
     m_pid = pid;
-    m_state = State::Running;
+    m_state = State::Starting;
     m_io    = std::move(io);
     m_start_time = std::chrono::steady_clock::now();
 }

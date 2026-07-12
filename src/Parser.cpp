@@ -19,6 +19,7 @@ std::vector<ProgramConfig> Parser::loadProgramsConf() {
         .cmd         = "/bin/echo hello-from-taskmaster",
         .autostart   = true,
         .autorestart = "never",
+        .starttime   = 0,
         .stdout_file = "./logs/greeter.stdout",
         .stderr_file = "./logs/greeter.stderr",
     });
@@ -29,6 +30,7 @@ std::vector<ProgramConfig> Parser::loadProgramsConf() {
         .cmd         = "/bin/ls -la /",
         .autostart   = true,
         .autorestart = "never",
+        .starttime   = 0,
         .stdout_file = "./logs/lister.stdout",
         .stderr_file = "./logs/lister.stderr",
     });
@@ -39,6 +41,7 @@ std::vector<ProgramConfig> Parser::loadProgramsConf() {
         .cmd         = "/bin/ls /no-existe-xyz",
         .autostart   = true,
         .autorestart = "never",
+        .starttime   = 0,
         .stdout_file = "./logs/errtest.stdout",
         .stderr_file = "./logs/errtest.stderr",
     });

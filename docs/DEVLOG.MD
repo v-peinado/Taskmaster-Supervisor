@@ -654,10 +654,10 @@ SIGTERM al taskmaster, sale limpio y se lleva a los hijos por delante:
 [11/07/2026-20:57:22] [ INFO ] - Application: Sent SIGTERM to sleeper (pid 194692)
 
 Y el ps despues queda vacio, ya no queda ningun sleeper colgando:
-
+```
 $ ps aux | grep sleep 1000000
 (nada)
-
+```
 SIGHUP, se loguea y el daemon SIGUE VIVO, que es lo que queria:
 
 [11/07/2026-21:00:36] [ INFO ] - Application: SIGHUP received, reload pending
@@ -668,3 +668,23 @@ Pendiente que he visto en las pruebas: el lister (un /bin/ls que sale con codigo
 me acaba en Fatal con un failed to start, giving up, porque muere antes de cumplir
 su starttime. Es lo mismo que hace supervisor (asume que supervisas servicios largos,
 no comandos one-shot), asi que el codigo esta bien, pero tengo que ajustar codigo.
+
+### 2026-07-12
+
+Arreglado el bug 3: tenia el estado Starting desconectado. El started() ponia
+Running directamente y el confirmStarted() no lo llamaba nadie, asi que
+setRunning y resetRestarts eran codigo muerto y el contador de reintentos nunca se
+reseteaba Ahora el started() pone Starting y el checkTimers()
+llama al confirmStarted() cada vuelta.
+
+Probado, ya sale el sleeper running en el log cuando cumple su starttime.
+
+Y una cosa buena que se ve en el log: los reintentos ahora son INSTANTANEOS (todos
+en el mismo segundo) en vez de 1 por segundo. Es el bucle unico: las muertes se
+procesan al momento por el pidfd, sin el retardo del poll de stdin que tenia antes.
+El problema de precision del starttime desaparecio solo, como habia previsto.
+
+Ajustados tambien los stubs one-shot (greeter, lister, errtest) con starttime 0,
+porque son comandos que mueren en milisegundos y con la ventana de arranque por
+defecto acababan en Fatal aunque salieran con codigo 0. Con starttime 0 no hay
+ventana y van por la politica normal.
