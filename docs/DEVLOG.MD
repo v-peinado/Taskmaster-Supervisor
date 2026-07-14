@@ -688,3 +688,37 @@ Ajustados tambien los stubs one-shot (greeter, lister, errtest) con starttime 0,
 porque son comandos que mueren en milisegundos y con la ventana de arranque por
 defecto acababan en Fatal aunque salieran con codigo 0. Con starttime 0 no hay
 ventana y van por la politica normal.
+
+[12/07/2026-20:43:49] [ INFO ] - Application: Taskmaster is running
+[12/07/2026-20:43:49] [ INFO ] - Application: The config file is config.yml
+[12/07/2026-20:43:49] [ WARNING ] - Application: The conf file is not validated
+[12/07/2026-20:43:49] [ INFO ] - Application: Started greeter (pid 232052)
+[12/07/2026-20:43:49] [ INFO ] - Application: Started lister (pid 232053)
+[12/07/2026-20:43:49] [ INFO ] - Application: Started errtest (pid 232054)
+[12/07/2026-20:43:49] [ INFO ] - Application: Started sleeper (pid 232055)
+[12/07/2026-20:43:49] [ INFO ] - Application: greeter running
+[12/07/2026-20:43:49] [ INFO ] - Application: lister running
+[12/07/2026-20:43:49] [ INFO ] - Application: errtest running
+[12/07/2026-20:43:49] [ INFO ] - Application: greeter exited, code 0
+[12/07/2026-20:43:49] [ INFO ] - Application: errtest exited, code 2
+[12/07/2026-20:43:49] [ INFO ] - Application: lister exited, code 0
+[12/07/2026-20:43:50] [ INFO ] - Application: sleeper running
+
+### 2026-07-14
+
+Creada la clase Shell. Se encarga del prompt, de leer la linea y de parsearla en
+un Command (el nombre del comando y un vector con sus argumentos). No ejecuta
+nada ni sabe nada del manager, solo devuelve el comando como dato y que otro decida
+que hacer con el. Asi cuando monte el cliente, esta misma Shell se va tal cual al
+cliente y el Command viaja por el socket.
+
+El readCommand devuelve un std::optional<Command>. Lo uso porque hay dos casos
+distintos que no quiero confundir: si el usuario pulsa Ctrl-D (EOF) no hay comando
+y hay que cerrar el programa, y eso lo devuelvo como nullopt. Pero si solo pulsa
+Enter con la linea vacia, eso no es EOF, no hay que cerrar nada, asi que devuelvo un
+Command vacio que simplemente se ignora. Con el optional queda explicito en la
+propia firma que puede no venir nada, y quien lo llama esta obligado a comprobarlo
+antes de usarlo.
+
+De momento el unico comando que hace algo es quit. El resto (status, start, stop,
+restart, reload) los conecto en el siguiente paso.
