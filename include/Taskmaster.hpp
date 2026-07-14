@@ -10,6 +10,7 @@
 #include <vector>
 #include <EventLoop.hpp>
 #include "SignalFd.hpp"
+#include <Shell.hpp>
 
 class Logger;
 
@@ -37,7 +38,7 @@ class Taskmaster {
         std::string m_config_file;
         Logger& m_logger;
         Parser m_parser;
-        //Shell m_shell;
+        Shell m_shell;
         EventLoop m_event_loop;
         SignalFd m_signal_fd;  
         ProccessManager m_proccess_manager;

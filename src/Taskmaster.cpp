@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <csignal>
+#include <optional>
 
 // Taskmaster - Constructors/Destructors
 
@@ -34,7 +35,7 @@ void Taskmaster::run() {
     m_event_loop.add(m_signal_fd.getFd(), EventLoop::EventType::SignalReceived);
     m_event_loop.add(STDIN_FILENO,        EventLoop::EventType::InputAvailable);
 
-    std::cout << "taskmaster> " << std::flush;
+    m_shell.prompt();
 
     while (m_running) {
         std::vector<EventLoop::Event> events = m_event_loop.wait(1000);
@@ -55,20 +56,26 @@ void Taskmaster::run() {
 }
 
 void Taskmaster::handleCommand() {
-    std::string line;
+    std::optional<Shell::Command> cmd = m_shell.readCommand();
 
-    if (!std::getline(std::cin, line)) {
+    if (!cmd) {                        // EOF (Ctrl-D)
         m_running = false;
         return;
     }
 
-    if (line == "quit")
+    if (cmd->name.empty()) {           // linea vacia, no hacemos nada
+        m_shell.prompt();
+        return;
+    }
+
+    if (cmd->name == "quit")
         m_running = false;
-    else if (!line.empty())
-        m_logger.log(Logger::LogLevel::Log, line);
+    // el resto de comandos: pendiente
+    else
+        m_logger.log(Logger::LogLevel::Log, cmd->name);
 
     if (m_running)
-        std::cout << "taskmaster> " << std::flush;
+        m_shell.prompt();
 }
 
 void Taskmaster::handleSignal() {
