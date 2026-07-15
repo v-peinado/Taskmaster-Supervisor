@@ -319,3 +319,29 @@ int ProccessManager::openLogFile(const std::string& path) {
         return -1;
     return open(path.c_str(), O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0644);
 }
+
+// status and aux
+
+std::string ProccessManager::status() const {
+    std::string out;
+
+    for (const auto& program : m_programs) {
+        out += program.getProgramConfig().name;
+        out += "    ";
+        out += stateToString(program.getState());
+
+        if (program.getState() == Program::State::Running
+            || program.getState() == Program::State::Starting) {
+            out += "    pid ";
+            out += std::to_string(program.getPid());
+        }
+
+        out += "\n";
+    }
+
+    return out;
+}
+
+std::string_view ProccessManager::stateToString(Program::State state) const {
+    return m_state_names[static_cast<int>(state)];
+}

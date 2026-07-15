@@ -722,3 +722,15 @@ antes de usarlo.
 
 De momento el unico comando que hace algo es quit. El resto (status, start, stop,
 restart, reload) los conecto en el siguiente paso.
+
+
+### 2026-07-12
+
+status funcionando te lista todos los programas con su estado (STOPPED, STARTING, RUNNING, EXITED, FATAL)
+y el pid si estan vivos.
+
+Se onstruye el string al vuelo a partir del estado de cada programa, no
+lo tiene guardado, asi que no es un getter, devuelve por valor, no una referencia a algo que es efimero,
+al salir del scope la referencia se quedaria colgando.
+
+

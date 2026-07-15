@@ -58,18 +58,20 @@ void Taskmaster::run() {
 void Taskmaster::handleCommand() {
     std::optional<Shell::Command> cmd = m_shell.readCommand();
 
-    if (!cmd) {                        // EOF (Ctrl-D)
+    if (!cmd) {
         m_running = false;
         return;
     }
 
-    if (cmd->name.empty()) {           // linea vacia, no hacemos nada
+    if (cmd->name.empty()) {
         m_shell.prompt();
         return;
     }
 
     if (cmd->name == "quit")
         m_running = false;
+    else if (cmd->name == "status")
+        m_shell.showResponse(m_proccess_manager.status());
     // el resto de comandos: pendiente
     else
         m_logger.log(Logger::LogLevel::Log, cmd->name);

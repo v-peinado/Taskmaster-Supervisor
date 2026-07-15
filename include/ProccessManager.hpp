@@ -4,12 +4,15 @@
 #include "Program.hpp"
 #include "Fd.hpp"
 #include "EventLoop.hpp"
+#include <array>
+#include <string_view>
 
 class Logger;
 class EventLoop;
 
 class ProccessManager {
     public:
+
         ProccessManager() = delete;
         ProccessManager(Logger& logger, EventLoop& event_loop);
         ~ProccessManager() = default;
@@ -27,11 +30,10 @@ class ProccessManager {
         void handleEvent(const EventLoop::Event& ev);
         void checkTimers();
         void stopAll();
-
-        // Getters
-        const std::string& status() const;
+        std::string status() const;
  
     private:
+
         Logger&                 m_logger;
         EventLoop&              m_event_loop;
         std::vector<Program>    m_programs;
@@ -51,4 +53,11 @@ class ProccessManager {
         void setupChild(const ProgramConfig& cfg, int out_write, int err_write);
         void execProgram(const std::vector<std::string>& args);
         int openLogFile(const std::string& path);
+
+        //status aux
+        std::string_view stateToString(Program::State state) const;
+
+        static constexpr std::array<std::string_view, 5> m_state_names {
+                "STOPPED", "STARTING", "RUNNING", "EXITED", "FATAL"
+        };
 };
