@@ -72,6 +72,16 @@ void Taskmaster::handleCommand() {
         m_running = false;
     else if (cmd->name == "status")
         m_shell.showResponse(m_proccess_manager.status());
+    else if (cmd->name == "help")
+        m_shell.showResponse(
+            "commands:\n"
+            "  status              show all programs and their state\n"
+            "  start <program>     start a program\n"
+            "  stop <program>      stop a program\n"
+            "  restart <program>   restart a program\n"
+            "  reload              reload the config file\n"
+            "  help                show this help\n"
+            "  quit                exit taskmaster");
     // el resto de comandos: pendiente
     else
         m_logger.log(Logger::LogLevel::Log, cmd->name);
