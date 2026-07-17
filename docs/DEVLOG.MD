@@ -472,15 +472,7 @@ propiedad del recurso.
 
 Como ya capturo la muerte del hijo, puedo empezar a gestionar el restart, mpodificamos el handleDeath,
 captura,mos la razon de su muertes y comprobamos si tiene la posibilidad de restart si es asi lo relanzamos.
-
-Para saber si debemos relanzarlo miramos su variable autorestart, si es never = false, si es always = true y
-si es una salida inexperada o es por un exitcode contemplado.
-
-No estoy logeando los test, voy a intentar mejorar eso
-
-
-### 2026-06-28
-
+se
 Metido el starttime y el startretries para que el autorestart no se vuelva loco.
 
 Ahora el Program guarda la hora a la que arranco y empieza en estado Starting,
@@ -778,3 +770,5 @@ sleeper    RUNNING    pid 428467
 
 Vemos como se lanzan los procesos, el unico que esta hecho para perdurar sleeper,
 si se intenta arrancar avisa, y unpo que haya acabao en los logs se ve que se relanza.
+
+
