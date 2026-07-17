@@ -23,7 +23,7 @@ class ProccessManager {
 
         //Public methods
         void startManager(const std::vector<ProgramConfig>& cfg); // create Programs
-        void startProccess(const std::string& proc_name);
+        std::string startProccess(const std::string& name);
         void stopProccess(const std::string& proc_name);
         void restartProccess(const std::string& proc_name);
         void reloadManager(const std::vector<ProgramConfig>& cfg);

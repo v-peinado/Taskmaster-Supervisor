@@ -724,7 +724,7 @@ De momento el unico comando que hace algo es quit. El resto (status, start, stop
 restart, reload) los conecto en el siguiente paso.
 
 
-### 2026-07-12
+### 2026-07-1
 
 status funcionando te lista todos los programas con su estado (STOPPED, STARTING, RUNNING, EXITED, FATAL)
 y el pid si estan vivos.
@@ -734,3 +734,47 @@ lo tiene guardado, asi que no es un getter, devuelve por valor, no una referenci
 al salir del scope la referencia se quedaria colgando.
 
 
+### 2026-07-17
+
+Añadido llamar a start desde la shell, aprovechamos la funcion startProc para rellamarla como si fuese 
+un comando, baraje separarlo en otra clase pero no tiene sentido, es parte de el proceso de lanzado de programas
+solo lo reutlizamos aqui.
+
+./taskmaster config.yml
+taskmaster> start sleep
+no such program: sleep
+
+taskmaster> status   
+greeter    EXITED
+lister    EXITED
+errtest    EXITED
+sleeper    RUNNING    pid 428467
+
+taskmaster> start sleeper
+sleeper is already running
+
+taskmaster> start lister
+lister started
+taskmaster> status
+greeter    EXITED
+lister    EXITED
+errtest    EXITED
+sleeper    RUNNING    pid 428467
+
+[17/07/2026-20:19:59] [ INFO ] - Application: Started greeter (pid 428464)
+[17/07/2026-20:19:59] [ INFO ] - Application: Started lister (pid 428465)
+[17/07/2026-20:19:59] [ INFO ] - Application: Started errtest (pid 428466)
+[17/07/2026-20:19:59] [ INFO ] - Application: Started sleeper (pid 428467)
+[17/07/2026-20:19:59] [ INFO ] - Application: greeter running
+[17/07/2026-20:19:59] [ INFO ] - Application: lister running
+[17/07/2026-20:19:59] [ INFO ] - Application: errtest running
+[17/07/2026-20:19:59] [ INFO ] - Application: greeter exited, code 0
+[17/07/2026-20:19:59] [ INFO ] - Application: errtest exited, code 2
+[17/07/2026-20:19:59] [ INFO ] - Application: lister exited, code 0
+[17/07/2026-20:20:00] [ INFO ] - Application: sleeper running
+[17/07/2026-20:20:54] [ INFO ] - Application: Started lister (pid 428730)
+[17/07/2026-20:20:54] [ INFO ] - Application: lister running
+[17/07/2026-20:20:54] [ INFO ] - Application: lister exited, code 0
+
+Vemos como se lanzan los procesos, el unico que esta hecho para perdurar sleeper,
+si se intenta arrancar avisa, y unpo que haya acabao en los logs se ve que se relanza.

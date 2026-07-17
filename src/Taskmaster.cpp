@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <csignal>
 #include <optional>
+#include "ProccessManager.hpp"
 
 // Taskmaster - Constructors/Destructors
 
@@ -82,7 +83,12 @@ void Taskmaster::handleCommand() {
             "  reload              reload the config file\n"
             "  help                show this help\n"
             "  quit                exit taskmaster");
-    // el resto de comandos: pendiente
+    else if (cmd->name == "start") {
+        if (cmd->args.empty())
+            m_shell.showResponse("usage: start <program>");
+        else
+            m_shell.showResponse(m_proccess_manager.startProccess(cmd->args[0]));
+    }
     else
         m_logger.log(Logger::LogLevel::Log, cmd->name);
 

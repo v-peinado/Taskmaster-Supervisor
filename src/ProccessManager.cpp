@@ -345,3 +345,17 @@ std::string ProccessManager::status() const {
 std::string_view ProccessManager::stateToString(Program::State state) const {
     return m_state_names[static_cast<int>(state)];
 }
+
+std::string ProccessManager::startProccess(const std::string& name) {
+    for (auto& program : m_programs) {
+        if (program.getProgramConfig().name == name) {
+            Program::State s = program.getState();
+            if (s == Program::State::Running || s == Program::State::Starting)
+                return name + " is already running";
+
+            launch(program);
+            return name + " started";
+        }
+    }
+    return "no such program: " + name;
+}
