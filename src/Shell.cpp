@@ -7,7 +7,7 @@ Shell::Shell()
     : m_prompt("taskmaster> ") {}
 
 void Shell::prompt() const {
-    std::cout << m_prompt << std::flush;
+    std::cout << "\033[36mtaskmaster> \033[0m" << std::flush;
 }
 
 std::optional<Shell::Command> Shell::readCommand() const {
