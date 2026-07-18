@@ -772,3 +772,15 @@ Vemos como se lanzan los procesos, el unico que esta hecho para perdurar sleeper
 si se intenta arrancar avisa, y unpo que haya acabao en los logs se ve que se relanza.
 
 
+### 2026-07-18
+
+Anadido stop. Le pasas el nombre y manda SIGTERM al proceso.
+bug: el autorestart lo revive. Cuando paro un programa a proposito, el
+pidfd detecta la muerte y el handleDeath aplica la politica normal (el sleeper es
+unexpected, morir por señal es inesperado) asi que lo relanza. Se ve en el log:
+killed by signal 15 seguido de Started sleeper otra vez.
+
+[18/07/2026-15:15:04] [ INFO ] - Application: sleeper running
+[18/07/2026-15:15:11] [ INFO ] - Application: sleeper killed by signal 15
+[18/07/2026-15:15:11] [ INFO ] - Application: Started sleeper (pid 470622)
+[18/07/2026-15:15:12] [ INFO ] - Application: sleeper running
