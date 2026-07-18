@@ -359,3 +359,18 @@ std::string ProccessManager::startProccess(const std::string& name) {
     }
     return "no such program: " + name;
 }
+
+std::string ProccessManager::stopProccess(const std::string& name) {
+    for (auto& program : m_programs) {
+        if (program.getProgramConfig().name == name) {
+            Program::State s = program.getState();
+            if (s != Program::State::Running && s != Program::State::Starting)
+                return name + " is not running";
+
+            kill(program.getPid(), SIGTERM);
+            program.stopped();
+            return name + " stopped";
+        }
+    }
+    return "no such program: " + name;
+}

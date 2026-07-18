@@ -24,7 +24,7 @@ class ProccessManager {
         //Public methods
         void startManager(const std::vector<ProgramConfig>& cfg); // create Programs
         std::string startProccess(const std::string& name);
-        void stopProccess(const std::string& proc_name);
+        std::string stopProccess(const std::string& proc_name);
         void restartProccess(const std::string& proc_name);
         void reloadManager(const std::vector<ProgramConfig>& cfg);
         void handleEvent(const EventLoop::Event& ev);
@@ -58,6 +58,10 @@ class ProccessManager {
         std::string_view stateToString(Program::State state) const;
 
         static constexpr std::array<std::string_view, 5> m_state_names {
-                "STOPPED", "STARTING", "RUNNING", "EXITED", "FATAL"
+            "\033[33mSTOPPED\033[0m",
+            "\033[33mSTARTING\033[0m",
+            "\033[32mRUNNING\033[0m",
+            "\033[33mEXITED\033[0m",
+            "\033[31mFATAL\033[0m"
         };
 };

@@ -87,7 +87,13 @@ void Taskmaster::handleCommand() {
         if (cmd->args.empty())
             m_shell.showResponse("usage: start <program>");
         else
-            m_shell.showResponse(m_proccess_manager.startProccess(cmd->args[0]));
+            m_shell.showResponse(m_proccess_manager.startProccess(cmd->args[0]));   
+    }
+    else if (cmd->name == "stop") {
+        if (cmd->args.empty())
+            m_shell.showResponse("usage: stop <program>");
+        else
+            m_shell.showResponse(m_proccess_manager.stopProccess(cmd->args[0]));
     }
     else
         m_logger.log(Logger::LogLevel::Log, cmd->name);
