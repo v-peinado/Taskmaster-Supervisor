@@ -203,6 +203,8 @@ void ProccessManager::handleDeath(Program& program) {
     int  code = info.si_status;
     bool was_starting = !program.startWindowPassed();
 
+    bool was_stopped = (program.getState() == Program::State::Stopped);
+
     if (by_signal)
         m_logger.log(Logger::LogLevel::Info,
             program.getProgramConfig().name + " killed by signal " + std::to_string(code));
@@ -212,6 +214,11 @@ void ProccessManager::handleDeath(Program& program) {
 
     m_event_loop.remove(pidfd);
     program.closePidFd();
+
+    if (was_stopped) {
+        return;
+    }
+
     program.exited();
 
     if (was_starting) {

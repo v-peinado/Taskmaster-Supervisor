@@ -784,3 +784,33 @@ killed by signal 15 seguido de Started sleeper otra vez.
 [18/07/2026-15:15:11] [ INFO ] - Application: sleeper killed by signal 15
 [18/07/2026-15:15:11] [ INFO ] - Application: Started sleeper (pid 470622)
 [18/07/2026-15:15:12] [ INFO ] - Application: sleeper running
+
+### 2026-07-18
+
+comando stop arreglado. El problema era que al parar un programa a
+proposito, el pidfd detectaba la muerte y el "handleDeath" lo relanzaba con la
+politica normal (el sleeper es unexpected, morir por señal cuenta como inesperado).
+
+Para solucionarlo el "stopProccess" marca el estado como Stopped ANTES de mandar el
+SIGTERM, y en el "handleDeath" añado una guarda que comprueba si estaba Stopped. Si
+lo estaba, reapea y limpia pero NO relanza. Lo importante es leer esa marca al
+principio, antes del exited(), o se pierde.
+
+./taskmaster conf.yml
+taskmaster> status
+greeter    EXITED
+lister    EXITED
+errtest    EXITED
+sleeper    RUNNING    pid 567131
+
+taskmaster> stop sleeper
+sleeper stopped
+taskmaster> status
+greeter    EXITED
+lister    EXITED
+errtest    EXITED
+sleeper    STOPPED
+
+[20/07/2026-19:59:50] [ INFO ] - Application: sleeper running
+[20/07/2026-20:00:07] [ INFO ] - Application: sleeper killed by signal 15
+[20/07/2026-20:02:35] [ INFO ] - Application: Shutdown signal received, quitting
