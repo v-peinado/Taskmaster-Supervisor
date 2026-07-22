@@ -25,7 +25,7 @@ class ProccessManager {
         void startManager(const std::vector<ProgramConfig>& cfg); // create Programs
         std::string startProccess(const std::string& name);
         std::string stopProccess(const std::string& proc_name);
-        void restartProccess(const std::string& proc_name);
+        std::string restartProccess(const std::string& proc_name);
         void reloadManager(const std::vector<ProgramConfig>& cfg);
         void handleEvent(const EventLoop::Event& ev);
         void checkTimers();

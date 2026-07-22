@@ -10,7 +10,8 @@ Program::Program(const ProgramConfig& cfg)
 : m_config(cfg)
 , m_pid(-1)
 , m_state(Program::State::Stopped) 
-, m_restarts(0){}
+, m_restarts(0)
+, m_pending_restart(false){}
 
 // Getters
 
@@ -31,6 +32,8 @@ int Program::getStdoutLogFd() const { return m_io.stdout_log.getFd(); }
 int Program::getStderrLogFd() const { return m_io.stderr_log.getFd(); }
 
 int Program::getPidFd() const { return m_io.pidfd.getFd(); }
+
+bool Program::isPendingRestart() const { return m_pending_restart; }
 
 //aux
 
@@ -79,3 +82,6 @@ void Program::incRestartNum() {
     m_restarts++;
 }
 
+void Program::setPendingRestart(bool value) {
+    m_pending_restart = value;
+}

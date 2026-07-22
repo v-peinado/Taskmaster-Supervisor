@@ -57,6 +57,10 @@ class Program {
         void closePidFd();
         bool startWindowPassed() const;
 
+        // restart logic
+        void setPendingRestart(bool value);
+        bool isPendingRestart() const;
+
     private:
 
         ProgramConfig   m_config;
@@ -65,4 +69,5 @@ class Program {
         int             m_restarts;
         ProcessIO       m_io;
         std::chrono::steady_clock::time_point m_start_time;
+        bool m_pending_restart;
 };

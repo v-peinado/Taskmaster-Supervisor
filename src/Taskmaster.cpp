@@ -95,6 +95,12 @@ void Taskmaster::handleCommand() {
         else
             m_shell.showResponse(m_proccess_manager.stopProccess(cmd->args[0]));
     }
+    else if (cmd->name == "restart") {
+        if (cmd->args.empty())
+            m_shell.showResponse("usage: restart <program>");
+        else
+            m_shell.showResponse(m_proccess_manager.restartProccess(cmd->args[0]));
+    }
     else
         m_logger.log(Logger::LogLevel::Log, cmd->name);
 

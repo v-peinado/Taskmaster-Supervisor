@@ -788,11 +788,11 @@ killed by signal 15 seguido de Started sleeper otra vez.
 ### 2026-07-18
 
 comando stop arreglado. El problema era que al parar un programa a
-proposito, el pidfd detectaba la muerte y el "handleDeath" lo relanzaba con la
+proposito, el pidfd detectaba la muerte y el handleDeath lo relanzaba con la
 politica normal (el sleeper es unexpected, morir por señal cuenta como inesperado).
 
-Para solucionarlo el "stopProccess" marca el estado como Stopped ANTES de mandar el
-SIGTERM, y en el "handleDeath" añado una guarda que comprueba si estaba Stopped. Si
+Para solucionarlo el stopProccess marca el estado como Stopped ANTES de mandar el
+SIGTERM, y en el handleDeath añado una guarda que comprueba si estaba Stopped. Si
 lo estaba, reapea y limpia pero NO relanza. Lo importante es leer esa marca al
 principio, antes del exited(), o se pierde.
 
@@ -814,3 +814,39 @@ sleeper    STOPPED
 [20/07/2026-19:59:50] [ INFO ] - Application: sleeper running
 [20/07/2026-20:00:07] [ INFO ] - Application: sleeper killed by signal 15
 [20/07/2026-20:02:35] [ INFO ] - Application: Shutdown signal received, quitting
+
+### 2026-07-18
+
+primera fase del restart. La clave esta en respetar que el stop no mata al
+proceso en el momento, el kill(pid, SIGTERM) eso SOLO manda la señal y la funcion vuelve
+enseguida. El proceso todavia esta vivo cuando kill retorna. El proceso morira
+cuando deba morir es decir, si el proceso limpia recursos y tarda mas, eso no lo controlo yo,
+la muerte llega como otro evento distinto yposterior: el pidfd se vuelve legible mas tarde,
+en otra vuelta del bucle, y ahi proceso el handleDeath.
+
+Por eso un restart no puede ser un stop seguido de un start en el mismo evento: el
+start correria cuando el proceso viejo TODAVIA esta vivo (kill solo mando la señal),
+y tendria el viejo y el nuevo a la vez. El restart tiene que ESPERAR a que la muerte
+llegue. Debemos trabajar sobre ese asincronismo.
+
+No hay que confundir esto con el ordenamiento en un bucle de eventos. 
+El bucle procesa los eventos de forma ordenada, uno tras otro sin solaparse, eso esta bien. 
+Pero el bucle ordena COMO reacciono a los eventos, no controla CUANDO el kernel mata al proceso.
+La muerte sigue siendo un evento futuro que el bucle recogera cuando ocurra.
+
+La solucion: un flag pending_restart en el Program. El restartProccess marca
+el flag, pone el estado en Stopped y manda SIGTERM. Cuando el proceso muere de
+verdad, el handleDeath ve que estaba Stopped (no relanza por politica) pero ademas
+ve el pending_restart, asi que lo relanza AHORA que ya ha terminado, y limpia el
+flag. El rearranque solo ocurre cuando el proceso ha muerto del todo, nunca se
+solapan.
+
+De momento es el restart simple: manda SIGTERM y confia en que muera. Si un proceso
+ignora el SIGTERM se quedaria colgado con el flag puesto. Eso lo blindara el stop
+completo (stoptime + SIGKILL) mas adelante. Empezar simple y mejorar.
+
+!!!!!!!!NOTA!!!!!!!!!!!!!!!!!!!
+refactor: handleCommand se esta llenando de else if y empieza a ser grande. Hay que refactorizarlo,
+quiza con un map de comando a funcion (un switch normal no vale porque los comandos
+son strings, no enteros)
+

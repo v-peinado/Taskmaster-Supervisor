@@ -216,6 +216,10 @@ void ProccessManager::handleDeath(Program& program) {
     program.closePidFd();
 
     if (was_stopped) {
+        if (program.isPendingRestart()) {
+            program.setPendingRestart(false);
+            launch(program);
+        }
         return;
     }
 
@@ -377,6 +381,25 @@ std::string ProccessManager::stopProccess(const std::string& name) {
             kill(program.getPid(), SIGTERM);
             program.stopped();
             return name + " stopped";
+        }
+    }
+    return "no such program: " + name;
+}
+
+std::string ProccessManager::restartProccess(const std::string& name) {
+    for (auto& program : m_programs) {
+        if (program.getProgramConfig().name == name) {
+            Program::State s = program.getState();
+
+            if (s == Program::State::Running || s == Program::State::Starting) {
+                program.setPendingRestart(true);
+                program.stopped();
+                kill(program.getPid(), SIGTERM);
+                return name + " restarting";
+            }
+
+            launch(program);
+            return name + " started";
         }
     }
     return "no such program: " + name;
