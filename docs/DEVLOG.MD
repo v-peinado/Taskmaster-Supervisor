@@ -875,3 +875,9 @@ espacios y ya. Asi que un cmd tipo sh -c 'esto lleva espacios' se trocea mal y e
 peta con codigo 2. Lo he arreglado metiendo el script de prueba en un fichero, pero
 hay que acordarse para cuando haga el parser de verdad, por si en la defensa me
 prueban un cmd con comillas.
+
+### 2026-07-23
+
+Arreglado un bug del restart. Al realizar el stop completo como guarda del handledeath,
+se mira stopping, pero en restasrt se sigue mirando stopped, por lo que nunca entraria.
+

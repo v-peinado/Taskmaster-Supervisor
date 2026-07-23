@@ -406,9 +406,10 @@ std::string ProccessManager::restartProccess(const std::string& name) {
             Program::State s = program.getState();
 
             if (s == Program::State::Running || s == Program::State::Starting) {
+                int sig = signalFromName(program.getProgramConfig().stopsignal);
                 program.setPendingRestart(true);
-                program.stopped();
-                kill(program.getPid(), SIGTERM);
+                program.stopping();              // Stopping, no stopped()
+                kill(program.getPid(), sig);     // su señal, no SIGTERM fijo
                 return name + " restarting";
             }
 
