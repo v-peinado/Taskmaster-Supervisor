@@ -142,6 +142,18 @@ void ProccessManager::handleEvent(const EventLoop::Event& ev) {
 
 void ProccessManager::checkTimers() {
     confirmStarted();
+    checkStopTimeouts();
+}
+
+void ProccessManager::checkStopTimeouts() {
+    for (auto& program : m_programs) {
+        if (program.getState() == Program::State::Stopping
+            && program.stopWindowPassed()) {
+            m_logger.log(Logger::LogLevel::Warning,
+                program.getProgramConfig().name + " did not stop in time, sending SIGKILL");
+            kill(program.getPid(), SIGKILL);
+        }
+    }
 }
 
 void ProccessManager::confirmStarted() {
@@ -203,7 +215,7 @@ void ProccessManager::handleDeath(Program& program) {
     int  code = info.si_status;
     bool was_starting = !program.startWindowPassed();
 
-    bool was_stopped = (program.getState() == Program::State::Stopped);
+    bool was_stopping = (program.getState() == Program::State::Stopping);
 
     if (by_signal)
         m_logger.log(Logger::LogLevel::Info,
@@ -215,7 +227,8 @@ void ProccessManager::handleDeath(Program& program) {
     m_event_loop.remove(pidfd);
     program.closePidFd();
 
-    if (was_stopped) {
+    if (was_stopping) {
+        program.stopped();
         if (program.isPendingRestart()) {
             program.setPendingRestart(false);
             launch(program);
@@ -378,9 +391,10 @@ std::string ProccessManager::stopProccess(const std::string& name) {
             if (s != Program::State::Running && s != Program::State::Starting)
                 return name + " is not running";
 
-            kill(program.getPid(), SIGTERM);
-            program.stopped();
-            return name + " stopped";
+            int sig = signalFromName(program.getProgramConfig().stopsignal);
+            program.stopping();
+            kill(program.getPid(), sig);
+            return name + " stopping";
         }
     }
     return "no such program: " + name;
@@ -403,4 +417,15 @@ std::string ProccessManager::restartProccess(const std::string& name) {
         }
     }
     return "no such program: " + name;
+}
+
+int ProccessManager::signalFromName(const std::string& name) const {
+    if (name == "TERM") return SIGTERM;
+    if (name == "INT")  return SIGINT;
+    if (name == "QUIT") return SIGQUIT;
+    if (name == "HUP")  return SIGHUP;
+    if (name == "USR1") return SIGUSR1;
+    if (name == "USR2") return SIGUSR2;
+    if (name == "KILL") return SIGKILL;
+    return SIGTERM;
 }

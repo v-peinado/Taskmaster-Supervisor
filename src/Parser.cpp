@@ -56,6 +56,18 @@ std::vector<ProgramConfig> Parser::loadProgramsConf() {
         .stderr_file = "./logs/sleeper.stderr",
     });
 
+    programs.push_back(ProgramConfig{
+        .name         = "stubborn",
+        .cmd = "./test/stubborn.sh",
+        .autostart    = true,
+        .autorestart  = "never",
+        .startretries = 3,
+        .starttime    = 2,
+        .stoptime     = 3,
+        .stdout_file  = "./logs/stubborn.stdout",
+        .stderr_file  = "./logs/stubborn.stderr",
+    });
+
 
     return programs;
 }

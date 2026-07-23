@@ -11,7 +11,8 @@ class Program {
             Starting,
             Running,
             Exited,
-            Fatal
+            Fatal,
+            Stopping
         };
 
         struct ProcessIO {
@@ -39,6 +40,7 @@ class Program {
         void incRestartNum();
         void resetRestarts();
         void setRunning();
+        void stopping();
 
         // Getters
         int  getStdoutFd() const;
@@ -56,7 +58,7 @@ class Program {
         void closeStderr();
         void closePidFd();
         bool startWindowPassed() const;
-
+        bool stopWindowPassed() const;
         // restart logic
         void setPendingRestart(bool value);
         bool isPendingRestart() const;
@@ -69,5 +71,6 @@ class Program {
         int             m_restarts;
         ProcessIO       m_io;
         std::chrono::steady_clock::time_point m_start_time;
+        std::chrono::steady_clock::time_point m_stop_time;
         bool m_pending_restart;
 };

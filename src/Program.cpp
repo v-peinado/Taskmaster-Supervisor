@@ -62,6 +62,12 @@ bool Program::startWindowPassed() const {
     return elapsed >= m_config.starttime;
 }
 
+bool Program::stopWindowPassed() const {
+    auto now     = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - m_stop_time).count();
+    return elapsed >= m_config.stoptime;
+}
+
 void Program::resetRestarts() { 
     m_restarts = 0;
 }
@@ -84,4 +90,9 @@ void Program::incRestartNum() {
 
 void Program::setPendingRestart(bool value) {
     m_pending_restart = value;
+}
+
+void Program::stopping() {
+    m_state = State::Stopping;
+    m_stop_time = std::chrono::steady_clock::now();
 }

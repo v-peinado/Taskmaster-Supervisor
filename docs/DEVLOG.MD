@@ -850,3 +850,28 @@ refactor: handleCommand se esta llenando de else if y empieza a ser grande. Hay 
 quiza con un map de comando a funcion (un switch normal no vale porque los comandos
 son strings, no enteros)
 
+### 2026-07-23
+
+Terminado el stop completo. Ya no se manda SIGTERM, mando la señal que diga el
+config de cada programa (traduzco el "TERM" o el "USR1" al numero), y si el proceso
+ignora esta orden se espera el stop time y se fuerza su muerte con senal que no es bloqueable, SIGKILL -9.
+
+Para contemplar esta posible transicion se crea el estado stopping, y se calcula con los check timers 
+el tiempo de reaccion.
+
+Esto aregla otro cabo suelto, al asegurarnos de que se mata Definitivamente coon SIGKILL, evitamos
+que se quede colgado el proceso en pending_restart, esperando indefinidamente a un proceso que no muere.
+
+Claudio crea un script que ignora el SIGTERM (con un trap "" TERM). Sale en el log:
+
+[23/07/2026-12:05:07] [ WARNING ] - Application: stubborn did not stop in time, sending SIGKILL
+[23/07/2026-12:05:07] [ INFO ] - Application: stubborn killed by signal 9
+
+El 9 es el SIGKILL, o sea que el remate funciona. Con el sleeper normal muere a la
+primera con la 15 y ni hace falta.
+
+Una cosa que me he encontrado probando: el "splitCmd" no entiende comillas, parte por
+espacios y ya. Asi que un cmd tipo sh -c 'esto lleva espacios' se trocea mal y el sh
+peta con codigo 2. Lo he arreglado metiendo el script de prueba en un fichero, pero
+hay que acordarse para cuando haga el parser de verdad, por si en la defensa me
+prueban un cmd con comillas.
