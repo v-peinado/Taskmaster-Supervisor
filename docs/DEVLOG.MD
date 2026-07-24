@@ -853,7 +853,7 @@ son strings, no enteros)
 ### 2026-07-23
 
 Terminado el stop completo. Ya no se manda SIGTERM, mando la señal que diga el
-config de cada programa (traduzco el "TERM" o el "USR1" al numero), y si el proceso
+config de cada programa (traduzco el TERM o el USR1 al numero), y si el proceso
 ignora esta orden se espera el stop time y se fuerza su muerte con senal que no es bloqueable, SIGKILL -9.
 
 Para contemplar esta posible transicion se crea el estado stopping, y se calcula con los check timers 
@@ -862,7 +862,7 @@ el tiempo de reaccion.
 Esto aregla otro cabo suelto, al asegurarnos de que se mata Definitivamente coon SIGKILL, evitamos
 que se quede colgado el proceso en pending_restart, esperando indefinidamente a un proceso que no muere.
 
-Claudio crea un script que ignora el SIGTERM (con un trap "" TERM). Sale en el log:
+Claudio crea un script que ignora el SIGTERM (con un trap  TERM). Sale en el log:
 
 [23/07/2026-12:05:07] [ WARNING ] - Application: stubborn did not stop in time, sending SIGKILL
 [23/07/2026-12:05:07] [ INFO ] - Application: stubborn killed by signal 9
@@ -870,7 +870,7 @@ Claudio crea un script que ignora el SIGTERM (con un trap "" TERM). Sale en el l
 El 9 es el SIGKILL, o sea que el remate funciona. Con el sleeper normal muere a la
 primera con la 15 y ni hace falta.
 
-Una cosa que me he encontrado probando: el "splitCmd" no entiende comillas, parte por
+Una cosa que me he encontrado probando: el splitCmd no entiende comillas, parte por
 espacios y ya. Asi que un cmd tipo sh -c 'esto lleva espacios' se trocea mal y el sh
 peta con codigo 2. Lo he arreglado metiendo el script de prueba en un fichero, pero
 hay que acordarse para cuando haga el parser de verdad, por si en la defensa me
@@ -894,38 +894,38 @@ antes de seguir avanzando.
 Se crea bateria de prueba:
 1. Autostart y promocion a RUNNING. Prueba que los autostart arrancan solos y que al
 sobrevivir su starttime pasan de STARTING a RUNNING reseteando los reintentos. Pilla
-que no se llame al "confirmStarted" o que el started() ponga RUNNING de golpe
+que no se llame al confirmStarted o que el started() ponga RUNNING de golpe
 saltandose la ventana (el bug que tuve con el contador pegajoso).
 
-2. "never" y muerte normal. Prueba que la politica se respeta y el programa se queda
-muerto. Espero el "exited, code 0" y NADA mas detras. Pilla que se ignore la politica
+2. never y muerte normal. Prueba que la politica se respeta y el programa se queda
+muerto. Espero el exited, code 0 y NADA mas detras. Pilla que se ignore la politica
 o que la muerte se clasifique mal y caiga en la rama de fallo de arranque, que
 reintenta sin mirar la politica.
 
-3. "always" que peta al instante. Prueba que el startretries frena el bucle y acaba
-en FATAL. Espero dos "retrying" y un "giving up", y sobre todo que DEJE de relanzar.
+3. always que peta al instante. Prueba que el startretries frena el bucle y acaba
+en FATAL. Espero dos retrying y un giving up, y sobre todo que DEJE de relanzar.
 Pilla el bucle infinito que tuve por poner el starttime demasiado corto.
 
 4. Stop limpio con un proceso que obedece. Prueba que manda la señal, muere, y el
 autorestart NO lo revive. Pilla que falte la guarda de parada voluntaria en el
-"handleDeath" (el sleeper me revivia solo) o que la guarda se mire despues de cambiar
+handleDeath (el sleeper me revivia solo) o que la guarda se mire despues de cambiar
 el estado y se pierda la marca.
 
 5. Stop sobre proceso terco. Prueba las tres cosas del stop completo: mandar la señal
 del config, esperar el stoptime y rematar con SIGKILL. Espero verlo en STOPPING unos
-segundos, el "did not stop in time" y el "killed by signal 9". Pilla que no se llame
-al "checkStopTimeouts", que el estado no sea Stopping (y nadie lo vigile) o que mande
+segundos, el did not stop in time y el killed by signal 9. Pilla que no se llame
+al checkStopTimeouts, que el estado no sea Stopping (y nadie lo vigile) o que mande
 SIGTERM fijo en vez de la señal del config.
 
-6. Restart sobre un "never". Este es EL caso. Prueba que el pending_restart funciona
-solo, sin que la politica le eche una mano. Espero el SIGKILL y DESPUES el "Started".
+6. Restart sobre un never. Este es EL caso. Prueba que el pending_restart funciona
+solo, sin que la politica le eche una mano. Espero el SIGKILL y DESPUES el Started.
 Pilla justo el bug que arregle: el restart ponia Stopped y la guarda buscaba
-Stopping, asi que el bloque del flag no se alcanzaba nunca. Con un "unexpected" el
-bug se disfrazaba porque relanzaba por politica; con "never" no hay disfraz.
+Stopping, asi que el bloque del flag no se alcanzaba nunca. Con un unexpected el
+bug se disfrazaba porque relanzaba por politica; con never no hay disfraz.
 
 7. Restart sobre proceso normal. El camino feliz, y que respeta el asincronismo: el
-"Started" tiene que salir DESPUES del "killed", nunca antes. Pilla que el rearranque
-se dispare en el "restartProccess" en vez de en el "handleDeath", que dejaria dos
+Started tiene que salir DESPUES del killed, nunca antes. Pilla que el rearranque
+se dispare en el restartProccess en vez de en el handleDeath, que dejaria dos
 procesos vivos a la vez.
 
 8. Señales al daemon. Prueba que el signalfd esta enchufado al bucle. SIGTERM y
@@ -934,6 +934,57 @@ loguea pero el daemon SIGUE VIVO. Pilla el signalfd huerfano (las señales bloqu
 y nadie leyendolas, no podia ni matar el daemon) y los hijos heredando la mascara
 bloqueada, que ignoraban el SIGTERM.
 
-9. Errores de uso. "start" sin argumento, "stop noexiste", "start" de algo que ya
+9. Errores de uso. start sin argumento, stop noexiste, start de algo que ya
 corre. Pilla que acceda a args[0] sin comprobar que hay algo (crash) o que arranque
 un programa dos veces duplicando procesos.
+
+
+### 2026-07-24
+
+# antes de arrancar taskmaster
+ps -eo pid,cmd | grep -E sleep|stubborn|false | grep -v grep > /tmp/antes.txt
+
+# despues
+ps -eo pid,cmd | grep -E sleep|stubborn|false | grep -v grep > /tmp/despues.txt
+
+# comparamos
+diff /tmp/antes.txt /tmp/despues.txt
+
+
+Encontramos algo especifico, procesos que se quedan huerfanos, tambien podemos encontrarlos buscando
+procesos que no esten asociados a una tty, como serian los forkeados, y ademas no vinculados a la sesion
+(libres de sighup) gracias a setsid, esto se profundizara mas con la daemonizacion.
+
+ps aux | grep stubborn
+victor    697945  0.0  0.0   2896  1888 ?        Ss   14:09   0:00 /bin/sh ./test/stubborn.sh
+victor    697989  0.0  0.0   2896  1880 ?        Ss   14:09   0:00 /bin/sh ./test/stubborn.sh
+victor    698041  0.0  0.0  11836  2872 pts/2    S+   14:09   0:00 grep --color=auto stubborn
+
+Hay un problema al cerrar el programa taskmaster, porque con comandos el programa muere,
+
+taskmaster> stop stubborn_never
+stubborn_never stopping
+taskmaster> status
+oneshot_never    EXITED
+failer_always    STOPPED
+sleeper    RUNNING    pid 698655
+stubborn_never    STOPPED
+
+si volvemos a usar el comando sigue igual, no queda huerfano
+
+ps aux | grep stubborn.sh
+victor    697945  0.0  0.0   2896  1888 ?        Ss   14:09   0:00 /bin/sh ./test/stubborn.sh
+victor    697989  0.0  0.0   2896  1884 ?        Ss   14:09   0:00 /bin/sh ./test/stubborn.sh
+victor    698984  0.0  0.0  11840  2884 pts/2    S+   14:14   0:00 grep --color=auto stubborn.sh  (este es el propio grep)
+
+Se prueba a hacer stop y esperar antes de cerrar se cierra correctamente, 
+pero si se hace y se cierra rapido sigue quedando huerfano.
+
+Hemos encontrado dos bugs relazionados con procesos huerfanos, que deberiamos matAR 
+ADECUADAMENTE CON KILL -9 despues de darles la oprtunidad de morir ordenadamente y
+ de manera limpia.
+
+1. Si salgo de taskmaster con programas corriendo, parece que el stop all falla.
+
+2. Si le doy stop a algo y salgo antes de que muera, el programa tamien queda huerfano.
+
