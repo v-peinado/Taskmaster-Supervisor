@@ -11,6 +11,7 @@
 #include <EventLoop.hpp>
 #include "SignalFd.hpp"
 #include <Shell.hpp>
+#include <chrono>
 
 class Logger;
 
@@ -32,6 +33,7 @@ class Taskmaster {
         void init();
         void run();
         void stop();
+        bool shutdownTimedOut() const;
 
     private:
 
@@ -44,6 +46,8 @@ class Taskmaster {
         ProccessManager m_proccess_manager;
         std::vector<ProgramConfig> m_programs_conf;
         bool        m_running;
+        std::chrono::steady_clock::time_point m_shutdown_start;
+        bool m_shutting_down;
         //std::vector<Program> m_programs;
 
         void handleSignal();

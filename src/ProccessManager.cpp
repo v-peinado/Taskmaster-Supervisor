@@ -44,16 +44,17 @@ void ProccessManager::startManager(const std::vector<ProgramConfig>& configs) {
     }
 }
 
-void ProccessManager::stopAll() {
+void ProccessManager::stopAllPrograms() {
     for (auto& program : m_programs) {
-        if (program.getState() == Program::State::Running) {
-            pid_t pid = program.getPid();
-            if (pid > 0) {
-                kill(pid, SIGTERM);
-                m_logger.log(Logger::LogLevel::Info,
-                             "Sent SIGTERM to " + program.getProgramConfig().name +
-                             " (pid " + std::to_string(pid) + ")");
-            }
+        Program::State s = program.getState();
+        
+        if (s == Program::State::Running || s == Program::State::Starting) {
+            int sig = signalFromName(program.getProgramConfig().stopsignal);
+            program.stopping();
+            kill(program.getPid(), sig);
+            m_logger.log(Logger::LogLevel::Info,
+                "Sent " + program.getProgramConfig().stopsignal + " to " +
+                program.getProgramConfig().name);
         }
     }
 }
@@ -429,4 +430,15 @@ int ProccessManager::signalFromName(const std::string& name) const {
     if (name == "USR2") return SIGUSR2;
     if (name == "KILL") return SIGKILL;
     return SIGTERM;
+}
+
+bool ProccessManager::hasLivePrograms() const {
+    for (const auto& program : m_programs) {
+        Program::State s = program.getState();
+        if (s == Program::State::Running
+            || s == Program::State::Starting
+            || s == Program::State::Stopping)
+            return true;
+    }
+    return false;
 }

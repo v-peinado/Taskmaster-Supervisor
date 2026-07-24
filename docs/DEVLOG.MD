@@ -861,11 +861,11 @@ el tiempo de reaccion.
 
 Esto aregla otro cabo suelto, al asegurarnos de que se mata Definitivamente coon SIGKILL, evitamos
 que se quede colgado el proceso en pending_restart, esperando indefinidamente a un proceso que no muere.
-
+  
 Claudio crea un script que ignora el SIGTERM (con un trap  TERM). Sale en el log:
 
-[23/07/2026-12:05:07] [ WARNING ] - Application: stubborn did not stop in time, sending SIGKILL
-[23/07/2026-12:05:07] [ INFO ] - Application: stubborn killed by signal 9
+[23/07/2026-12:05:07] [ WARNING ] - Application: stubborn did not stop in time, sending SIGKILL  
+[23/07/2026-12:05:07] [ INFO ] - Application: stubborn killed by signal 9  
 
 El 9 es el SIGKILL, o sea que el remate funciona. Con el sleeper normal muere a la
 primera con la 15 y ni hace falta.
@@ -942,13 +942,13 @@ un programa dos veces duplicando procesos.
 ### 2026-07-24
 
 # antes de arrancar taskmaster
-ps -eo pid,cmd | grep -E sleep|stubborn|false | grep -v grep > /tmp/antes.txt
+ps -eo pid,cmd | grep -E sleep|stubborn|false | grep -v grep > /tmp/antes.txt  
 
 # despues
-ps -eo pid,cmd | grep -E sleep|stubborn|false | grep -v grep > /tmp/despues.txt
+ps -eo pid,cmd | grep -E sleep|stubborn|false | grep -v grep > /tmp/despues.txt  
 
 # comparamos
-diff /tmp/antes.txt /tmp/despues.txt
+diff /tmp/antes.txt /tmp/despues.txt  
 
 
 Encontramos algo especifico, procesos que se quedan huerfanos, tambien podemos encontrarlos buscando
@@ -956,26 +956,26 @@ procesos que no esten asociados a una tty, como serian los forkeados, y ademas n
 (libres de sighup) gracias a setsid, esto se profundizara mas con la daemonizacion.
 
 ps aux | grep stubborn
-victor    697945  0.0  0.0   2896  1888 ?        Ss   14:09   0:00 /bin/sh ./test/stubborn.sh
-victor    697989  0.0  0.0   2896  1880 ?        Ss   14:09   0:00 /bin/sh ./test/stubborn.sh
-victor    698041  0.0  0.0  11836  2872 pts/2    S+   14:09   0:00 grep --color=auto stubborn
+victor    697945  0.0  0.0   2896  1888 ?        Ss   14:09   0:00 /bin/sh ./test/stubborn.sh  
+victor    697989  0.0  0.0   2896  1880 ?        Ss   14:09   0:00 /bin/sh ./test/stubborn.sh  
+victor    698041  0.0  0.0  11836  2872 pts/2    S+   14:09   0:00 grep --color=auto stubborn  
 
 Hay un problema al cerrar el programa taskmaster, porque con comandos el programa muere,
 
-taskmaster> stop stubborn_never
-stubborn_never stopping
-taskmaster> status
-oneshot_never    EXITED
-failer_always    STOPPED
-sleeper    RUNNING    pid 698655
-stubborn_never    STOPPED
+taskmaster> stop stubborn_never  
+stubborn_never stopping  
+taskmaster> status  
+oneshot_never    EXITED  
+failer_always    STOPPED  
+sleeper    RUNNING    pid 698655  
+stubborn_never    STOPPED  
 
 si volvemos a usar el comando sigue igual, no queda huerfano
 
 ps aux | grep stubborn.sh
-victor    697945  0.0  0.0   2896  1888 ?        Ss   14:09   0:00 /bin/sh ./test/stubborn.sh
-victor    697989  0.0  0.0   2896  1884 ?        Ss   14:09   0:00 /bin/sh ./test/stubborn.sh
-victor    698984  0.0  0.0  11840  2884 pts/2    S+   14:14   0:00 grep --color=auto stubborn.sh  (este es el propio grep)
+victor    697945  0.0  0.0   2896  1888 ?        Ss   14:09   0:00 /bin/sh ./test/stubborn.sh  
+victor    697989  0.0  0.0   2896  1884 ?        Ss   14:09   0:00 /bin/sh ./test/stubborn.sh  
+victor    698984  0.0  0.0  11840  2884 pts/2    S+   14:14   0:00 grep --color=auto stubborn.sh  (este es el propio grep)  
 
 Se prueba a hacer stop y esperar antes de cerrar se cierra correctamente, 
 pero si se hace y se cierra rapido sigue quedando huerfano.
@@ -987,4 +987,24 @@ ADECUADAMENTE CON KILL -9 despues de darles la oprtunidad de morir ordenadamente
 1. Si salgo de taskmaster con programas corriendo, parece que el stop all falla.
 
 2. Si le doy stop a algo y salgo antes de que muera, el programa tamien queda huerfano.
+
+### 2026-07-24
+
+Arreglados los dos bugs de los huerfanos al salir. El problema era que el apagado
+mataba el bucle antes de que la parada hubiese terminado.
+
+Ahora el apagado no es manda la señal y sal, es una fase dentro del propio bucle.
+Cuando pido salir (SIGTERM, Ctrl-C o quit) marco m_shutting_down, mando la señal a
+todo lo vivo UNA vez, y el bucle SIGUE iterando: procesa las muertes por el pidfd y el
+checkStopTimeouts remata a los tercos con SIGKILL, igual que hace el stop por
+comando. Cuando no queda ningun programa vivo, sale. Se rehusa todo lo que estaba 
+ya construido.
+
+En resumen es un problema que se soluciona con diferentes flags.
+
+Se mete uin limite de seguridad, si tras 30 segundos aun queda algo
+vivo, salgo igualmente pero avisando en el log, de esta manera dejo patente que,
+para no dejar colgado el p;rograma se sale aunque se quede algun proceso huerfano si llegase a
+ocurrir(caso muuy especifico ya que sigkill es imperativa, salvo que implique alguna operaciion
+kernel, que la pone en cola a espera de la finalizacion de esta)
 

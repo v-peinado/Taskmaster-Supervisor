@@ -17,6 +17,7 @@ Taskmaster::Taskmaster(const Config& cfg, Logger& logger)
     , m_event_loop()
     , m_signal_fd() 
     , m_proccess_manager(logger, m_event_loop)
+    , m_shutting_down(false)
     {}
 
 // Logger - Public meths
@@ -31,14 +32,26 @@ void Taskmaster::init(){
 }
 
 void Taskmaster::run() {
-    m_running = true;
+    m_shutting_down = false;
+    bool signals_sent = false;
 
     m_event_loop.add(m_signal_fd.getFd(), EventLoop::EventType::SignalReceived);
     m_event_loop.add(STDIN_FILENO,        EventLoop::EventType::InputAvailable);
 
     m_shell.prompt();
 
-    while (m_running) {
+    while (true) {
+
+        if (m_shutting_down) {
+            if (!m_proccess_manager.hasLivePrograms())
+                break;
+            if (shutdownTimedOut()) {
+                m_logger.log(Logger::LogLevel::Warning,
+                    "Shutdown timed out, some programs may still be running");
+                break;
+            }
+        }
+
         std::vector<EventLoop::Event> events = m_event_loop.wait(1000);
 
         for (const EventLoop::Event& ev : events) {
@@ -51,16 +64,20 @@ void Taskmaster::run() {
         }
 
         m_proccess_manager.checkTimers();
-    }
 
-    m_proccess_manager.stopAll();
+        if (m_shutting_down && !signals_sent) {
+            m_shutdown_start = std::chrono::steady_clock::now();
+            m_proccess_manager.stopAllPrograms();
+            signals_sent = true;
+        }
+    }
 }
 
 void Taskmaster::handleCommand() {
     std::optional<Shell::Command> cmd = m_shell.readCommand();
 
     if (!cmd) {
-        m_running = false;
+        m_shutting_down = true;
         return;
     }
 
@@ -70,7 +87,7 @@ void Taskmaster::handleCommand() {
     }
 
     if (cmd->name == "quit")
-        m_running = false;
+        m_shutting_down = true;
     else if (cmd->name == "status")
         m_shell.showResponse(m_proccess_manager.status());
     else if (cmd->name == "help")
@@ -104,19 +121,23 @@ void Taskmaster::handleCommand() {
     else
         m_logger.log(Logger::LogLevel::Log, cmd->name);
 
-    if (m_running)
+    if (!m_shutting_down)
         m_shell.prompt();
 }
 
 void Taskmaster::handleSignal() {
     int sig = m_signal_fd.readSignal();
-
     if (sig == SIGINT || sig == SIGTERM) {
         m_logger.log(Logger::LogLevel::Info, "Shutdown signal received, quitting");
-        m_running = false;
+        m_shutting_down = true;
     }
     else if (sig == SIGHUP) {
         m_logger.log(Logger::LogLevel::Info, "SIGHUP received, reload pending");
-        // reload aqui
     }
+}
+
+bool Taskmaster::shutdownTimedOut() const {
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::steady_clock::now() - m_shutdown_start).count();
+    return elapsed >= 30;      // limite generoso
 }

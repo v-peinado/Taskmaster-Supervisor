@@ -31,6 +31,11 @@ class ProccessManager {
         void checkTimers();
         void stopAll();
         std::string status() const;
+
+        // end
+        bool hasLivePrograms() const;
+        void stopAllPrograms();
+
  
     private:
 
