@@ -1008,3 +1008,6 @@ para no dejar colgado el p;rograma se sale aunque se quede algun proceso huerfan
 ocurrir(caso muuy especifico ya que sigkill es imperativa, salvo que implique alguna operaciion
 kernel, que la pone en cola a espera de la finalizacion de esta)
 
+### 2026-07-25
+
+Proxima parada, parser, necesario para el hot reload y hot reload.
