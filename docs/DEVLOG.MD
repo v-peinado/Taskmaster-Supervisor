@@ -881,3 +881,59 @@ prueban un cmd con comillas.
 Arreglado un bug del restart. Al realizar el stop completo como guarda del handledeath,
 se mira stopping, pero en restasrt se sigue mirando stopped, por lo que nunca entraria.
 
+### 2026-07-24
+
+Despues de cazar el bug del restart, realizamos una nueva bateria de casos, parqa comprobar 
+mas pormenorizado los casos extremos.
+
+En el caso de restart, ya solucionadom se observo al realizar pruebas con un caso never.
+Esto da pie a la necesidad de realizar pruebas para seguir avanzando, ya que es necesario
+tener al 100% el funcionamiento correcto de loss relanzamientos y las muertes de los procesos 
+antes de seguir avanzando.
+
+Se crea bateria de prueba:
+1. Autostart y promocion a RUNNING. Prueba que los autostart arrancan solos y que al
+sobrevivir su starttime pasan de STARTING a RUNNING reseteando los reintentos. Pilla
+que no se llame al "confirmStarted" o que el started() ponga RUNNING de golpe
+saltandose la ventana (el bug que tuve con el contador pegajoso).
+
+2. "never" y muerte normal. Prueba que la politica se respeta y el programa se queda
+muerto. Espero el "exited, code 0" y NADA mas detras. Pilla que se ignore la politica
+o que la muerte se clasifique mal y caiga en la rama de fallo de arranque, que
+reintenta sin mirar la politica.
+
+3. "always" que peta al instante. Prueba que el startretries frena el bucle y acaba
+en FATAL. Espero dos "retrying" y un "giving up", y sobre todo que DEJE de relanzar.
+Pilla el bucle infinito que tuve por poner el starttime demasiado corto.
+
+4. Stop limpio con un proceso que obedece. Prueba que manda la señal, muere, y el
+autorestart NO lo revive. Pilla que falte la guarda de parada voluntaria en el
+"handleDeath" (el sleeper me revivia solo) o que la guarda se mire despues de cambiar
+el estado y se pierda la marca.
+
+5. Stop sobre proceso terco. Prueba las tres cosas del stop completo: mandar la señal
+del config, esperar el stoptime y rematar con SIGKILL. Espero verlo en STOPPING unos
+segundos, el "did not stop in time" y el "killed by signal 9". Pilla que no se llame
+al "checkStopTimeouts", que el estado no sea Stopping (y nadie lo vigile) o que mande
+SIGTERM fijo en vez de la señal del config.
+
+6. Restart sobre un "never". Este es EL caso. Prueba que el pending_restart funciona
+solo, sin que la politica le eche una mano. Espero el SIGKILL y DESPUES el "Started".
+Pilla justo el bug que arregle: el restart ponia Stopped y la guarda buscaba
+Stopping, asi que el bloque del flag no se alcanzaba nunca. Con un "unexpected" el
+bug se disfrazaba porque relanzaba por politica; con "never" no hay disfraz.
+
+7. Restart sobre proceso normal. El camino feliz, y que respeta el asincronismo: el
+"Started" tiene que salir DESPUES del "killed", nunca antes. Pilla que el rearranque
+se dispare en el "restartProccess" en vez de en el "handleDeath", que dejaria dos
+procesos vivos a la vez.
+
+8. Señales al daemon. Prueba que el signalfd esta enchufado al bucle. SIGTERM y
+Ctrl-C tienen que salir limpio con los hijos parados y el ps vacio, y el SIGHUP se
+loguea pero el daemon SIGUE VIVO. Pilla el signalfd huerfano (las señales bloqueadas
+y nadie leyendolas, no podia ni matar el daemon) y los hijos heredando la mascara
+bloqueada, que ignoraban el SIGTERM.
+
+9. Errores de uso. "start" sin argumento, "stop noexiste", "start" de algo que ya
+corre. Pilla que acceda a args[0] sin comprobar que hay algo (crash) o que arranque
+un programa dos veces duplicando procesos.
