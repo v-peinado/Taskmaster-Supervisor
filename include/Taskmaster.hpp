@@ -1,17 +1,14 @@
 #pragma once
-
-// #include "Shell.hpp"
+#include <string>
+#include <vector>
+#include <chrono>
 #include "Parser.hpp"
 #include "ProgramConfig.hpp"
 #include "Program.hpp"
 #include "ProccessManager.hpp"
-#include <iostream>
-#include <memory>
-#include <vector>
-#include <EventLoop.hpp>
+#include "EventLoop.hpp"
 #include "SignalFd.hpp"
-#include <Shell.hpp>
-#include <chrono>
+#include "Shell.hpp"
 
 class Logger;
 
@@ -22,7 +19,7 @@ class Taskmaster {
             std::string config_file;
         };
 
-        Taskmaster(const Config& cfg, Logger& logger);      // Add more param in future
+        Taskmaster(const Config& cfg, Logger& logger);
         Taskmaster() = delete;
         ~Taskmaster() = default;
         Taskmaster(const Taskmaster&) = delete;
@@ -30,26 +27,25 @@ class Taskmaster {
         Taskmaster(Taskmaster&&) = delete;
         Taskmaster& operator=(Taskmaster&&) = delete;
 
+        // Lifecycle
         void init();
         void run();
-        void stop();
         bool shutdownTimedOut() const;
 
     private:
 
-        std::string m_config_file;
-        Logger& m_logger;
-        Parser m_parser;
-        Shell m_shell;
-        EventLoop m_event_loop;
-        SignalFd m_signal_fd;  
-        ProccessManager m_proccess_manager;
-        std::vector<ProgramConfig> m_programs_conf;
-        bool        m_running;
-        std::chrono::steady_clock::time_point m_shutdown_start;
-        bool m_shutting_down;
-        //std::vector<Program> m_programs;
+        std::string                             m_config_file;
+        Logger&                                 m_logger;
+        Parser                                  m_parser;
+        Shell                                   m_shell;
+        EventLoop                               m_event_loop;
+        SignalFd                                m_signal_fd;
+        ProccessManager                         m_proccess_manager;
+        std::vector<ProgramConfig>              m_programs_conf;
+        std::chrono::steady_clock::time_point   m_shutdown_start;
+        bool                                    m_shutting_down;
 
+        // Event handlers
         void handleSignal();
         void handleCommand();
 };

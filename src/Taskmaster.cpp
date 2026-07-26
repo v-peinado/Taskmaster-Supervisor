@@ -2,33 +2,33 @@
 #include "ProgramConfig.hpp"
 #include "Logger.hpp"
 #include "Parser.hpp"
+#include "ProccessManager.hpp"
 #include <unistd.h>
 #include <fcntl.h>
 #include <csignal>
 #include <optional>
-#include "ProccessManager.hpp"
 
-// Taskmaster - Constructors/Destructors
+// Constructor
 
 Taskmaster::Taskmaster(const Config& cfg, Logger& logger)
     : m_config_file(cfg.config_file)
     , m_logger(logger)
     , m_parser(cfg.config_file)
     , m_event_loop()
-    , m_signal_fd() 
+    , m_signal_fd()
     , m_proccess_manager(logger, m_event_loop)
     , m_shutting_down(false)
     {}
 
-// Logger - Public meths
+// Lifecycle
 
-void Taskmaster::init(){
+void Taskmaster::init() {
     m_logger.log(Logger::LogLevel::Info, "Taskmaster is running");
     m_logger.log(Logger::LogLevel::Info, "The config file is " + m_config_file);
     m_logger.log(Logger::LogLevel::Warning, "The conf file is not validated");
+
     std::vector<ProgramConfig> programs_to_exec = m_parser.loadProgramsConf();
-    // ProcessManager , crear los programas a partir de programs to exec
-    m_proccess_manager.startManager(programs_to_exec);// llamamos al metodo de proccess para empezar a crear los programanas
+    m_proccess_manager.startManager(programs_to_exec);
 }
 
 void Taskmaster::run() {
@@ -73,15 +73,34 @@ void Taskmaster::run() {
     }
 }
 
+bool Taskmaster::shutdownTimedOut() const {
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::steady_clock::now() - m_shutdown_start).count();
+    return elapsed >= 30;      // generous safety limit
+}
+
+// Event handlers
+
+void Taskmaster::handleSignal() {
+    int sig = m_signal_fd.readSignal();
+    if (sig == SIGINT || sig == SIGTERM) {
+        m_logger.log(Logger::LogLevel::Info, "Shutdown signal received, quitting");
+        m_shutting_down = true;
+    }
+    else if (sig == SIGHUP) {
+        m_logger.log(Logger::LogLevel::Info, "SIGHUP received, reload pending");
+    }
+}
+
 void Taskmaster::handleCommand() {
     std::optional<Shell::Command> cmd = m_shell.readCommand();
 
-    if (!cmd) {
+    if (!cmd) {                          // EOF (Ctrl-D)
         m_shutting_down = true;
         return;
     }
 
-    if (cmd->name.empty()) {
+    if (cmd->name.empty()) {             // empty line
         m_shell.prompt();
         return;
     }
@@ -104,7 +123,7 @@ void Taskmaster::handleCommand() {
         if (cmd->args.empty())
             m_shell.showResponse("usage: start <program>");
         else
-            m_shell.showResponse(m_proccess_manager.startProccess(cmd->args[0]));   
+            m_shell.showResponse(m_proccess_manager.startProccess(cmd->args[0]));
     }
     else if (cmd->name == "stop") {
         if (cmd->args.empty())
@@ -123,21 +142,4 @@ void Taskmaster::handleCommand() {
 
     if (!m_shutting_down)
         m_shell.prompt();
-}
-
-void Taskmaster::handleSignal() {
-    int sig = m_signal_fd.readSignal();
-    if (sig == SIGINT || sig == SIGTERM) {
-        m_logger.log(Logger::LogLevel::Info, "Shutdown signal received, quitting");
-        m_shutting_down = true;
-    }
-    else if (sig == SIGHUP) {
-        m_logger.log(Logger::LogLevel::Info, "SIGHUP received, reload pending");
-    }
-}
-
-bool Taskmaster::shutdownTimedOut() const {
-    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
-        std::chrono::steady_clock::now() - m_shutdown_start).count();
-    return elapsed >= 30;      // limite generoso
 }
