@@ -1011,3 +1011,14 @@ kernel, que la pone en cola a espera de la finalizacion de esta)
 ### 2026-07-25
 
 Proxima parada, parser, necesario para el hot reload y hot reload.
+
+### 2026-07-26
+
+Empiezo una tanda de refactor. De momento solo lo estetico: ordeno cada clase y su
+.cpp por bloques logicos con comentarios en ingles, agrupando las funciones por su
+proposito, y quito el codigo muerto que se habia ido acumulando. Solo cosmetico, no
+toco logica. Lo hago en commits separados por archivo.
+
+Pendiente la refactorizacion  de logica: partir las funciones largas
+(launch, handleDeath) en subfunciones por responsabilidad, y el handleCommand, que
+es un bloque enorme de else-if.
