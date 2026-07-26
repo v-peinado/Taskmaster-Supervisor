@@ -1,17 +1,16 @@
 #include "ProccessManager.hpp"
-#include <sstream>
 #include "Logger.hpp"
 #include "EventLoop.hpp"
+#include <sstream>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <csignal>
-#include <sys/epoll.h>
 #include <sys/syscall.h>
 #include <sys/wait.h>
 
-#ifndef P_PIDFD    // dependiendo de la version de glibc puede no tener esta macro definida
+#ifndef P_PIDFD    // depending on the glibc version this macro may not be defined
 #define P_PIDFD static_cast<idtype_t>(3)
 #endif
 
@@ -19,16 +18,14 @@
 #define SYS_pidfd_open 434
 #endif
 
-// Constructors//destructor
+// Constructor
 
-ProccessManager::ProccessManager(Logger& logger, EventLoop& event_loop) 
+ProccessManager::ProccessManager(Logger& logger, EventLoop& event_loop)
     : m_logger(logger)
     , m_event_loop(event_loop)
     {}
-    
 
-
-// public methods
+// Manager lifecycle
 
 void ProccessManager::startManager(const std::vector<ProgramConfig>& configs) {
     m_programs.clear();
@@ -39,15 +36,26 @@ void ProccessManager::startManager(const std::vector<ProgramConfig>& configs) {
 
     for (auto& program : m_programs) {
         if (program.getProgramConfig().autostart) {
-            launch(program);      
+            launch(program);
         }
     }
+}
+
+bool ProccessManager::hasLivePrograms() const {
+    for (const auto& program : m_programs) {
+        Program::State s = program.getState();
+        if (s == Program::State::Running
+            || s == Program::State::Starting
+            || s == Program::State::Stopping)
+            return true;
+    }
+    return false;
 }
 
 void ProccessManager::stopAllPrograms() {
     for (auto& program : m_programs) {
         Program::State s = program.getState();
-        
+
         if (s == Program::State::Running || s == Program::State::Starting) {
             int sig = signalFromName(program.getProgramConfig().stopsignal);
             program.stopping();
@@ -59,7 +67,7 @@ void ProccessManager::stopAllPrograms() {
     }
 }
 
-// private methods
+// Launch
 
 void ProccessManager::launch(Program& program) {
     const ProgramConfig& cfg = program.getProgramConfig();
@@ -80,7 +88,7 @@ void ProccessManager::launch(Program& program) {
     }
     if (pipe2(err_pipe, O_CLOEXEC) < 0) {
         m_logger.log(Logger::LogLevel::Error, "pipe failed for " + cfg.name);
-        close(out_pipe[0]); close(out_pipe[1]);   // limpia el pipe que sí se creó
+        close(out_pipe[0]); close(out_pipe[1]);   // clean up the pipe that was created
         program.setFatalError();
         return;
     }
@@ -93,7 +101,7 @@ void ProccessManager::launch(Program& program) {
         close(err_pipe[0]);
         close(err_pipe[1]);
         program.setFatalError();
-        return;       
+        return;
     }
     if(pid == 0) {
         // setup child and exec
@@ -129,6 +137,60 @@ void ProccessManager::launch(Program& program) {
                  "Started " + cfg.name + " (pid " + std::to_string(pid) + ")");
 }
 
+// Launch helpers
+
+std::vector<std::string> ProccessManager::splitCmd(const std::string& cmd) {
+    std::vector<std::string> args;
+    std::istringstream iss(cmd);
+    std::string temp;
+    while(iss >> temp)
+        args.push_back(temp);
+    return args;
+}
+
+void ProccessManager::setupChild(const ProgramConfig& cfg, int out_write, int err_write) {
+    setsid();
+
+    // clear the inherited signal mask in the child
+    sigset_t empty;
+    sigemptyset(&empty);
+    sigprocmask(SIG_SETMASK, &empty, nullptr);
+
+    if (cfg.umask >= 0) {
+        mode_t mask = cfg.umask;
+        umask(mask);
+    }
+
+    if (!cfg.workingdir.empty())
+        if (chdir(cfg.workingdir.c_str()) != 0)
+            _exit(127);
+
+    for (const auto &[key, value] : cfg.env)
+        setenv(key.c_str(), value.c_str(), 1);
+
+    dup2(out_write, STDOUT_FILENO);
+    dup2(err_write, STDERR_FILENO);
+}
+
+void ProccessManager::execProgram(const std::vector<std::string>& args) {
+    std::vector<char*> argv;
+
+    for (const auto& a : args)
+        argv.push_back(const_cast<char*>(a.c_str()));
+    argv.push_back(nullptr);
+    execvp(argv[0], argv.data());
+
+    _exit(127);
+}
+
+int ProccessManager::openLogFile(const std::string& path) {
+    if (path.empty())
+        return -1;
+    return open(path.c_str(), O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0644);
+}
+
+// Event handling
+
 void ProccessManager::handleEvent(const EventLoop::Event& ev) {
     if (ev.type == EventLoop::EventType::ProcessExited) {
         Program* program = findByPidFd(ev.fd);
@@ -146,16 +208,7 @@ void ProccessManager::checkTimers() {
     checkStopTimeouts();
 }
 
-void ProccessManager::checkStopTimeouts() {
-    for (auto& program : m_programs) {
-        if (program.getState() == Program::State::Stopping
-            && program.stopWindowPassed()) {
-            m_logger.log(Logger::LogLevel::Warning,
-                program.getProgramConfig().name + " did not stop in time, sending SIGKILL");
-            kill(program.getPid(), SIGKILL);
-        }
-    }
-}
+// Monitoring
 
 void ProccessManager::confirmStarted() {
     for (auto& program : m_programs) {
@@ -169,37 +222,18 @@ void ProccessManager::confirmStarted() {
     }
 }
 
-Program* ProccessManager::findByReadFd(int fd) {
-    for (auto& program : m_programs)
-        if (program.getStdoutFd() == fd || program.getStderrFd() == fd)
-            return &program;
-    return nullptr;
+void ProccessManager::checkStopTimeouts() {
+    for (auto& program : m_programs) {
+        if (program.getState() == Program::State::Stopping
+            && program.stopWindowPassed()) {
+            m_logger.log(Logger::LogLevel::Warning,
+                program.getProgramConfig().name + " did not stop in time, sending SIGKILL");
+            kill(program.getPid(), SIGKILL);
+        }
+    }
 }
 
-Program* ProccessManager::findByPidFd(int fd) {
-    for (auto& program : m_programs)
-        if (program.getPidFd() == fd)
-            return &program;
-    return nullptr;
-}
-
-bool ProccessManager::shouldRestart(const Program& program, bool by_signal, int code) {
-    const ProgramConfig& cfg = program.getProgramConfig();
-
-    if (cfg.autorestart == "never")
-        return false;
-
-    if (cfg.autorestart == "always")
-        return true;
-
-    if (by_signal) // death by signal is always unexpected
-        return true;
-
-    for (int expected : cfg.exitcodes)
-        if (code == expected)
-            return false;
-    return true;
-}
+// Process death
 
 void ProccessManager::handleDeath(Program& program) {
     int pidfd = program.getPidFd();
@@ -257,6 +291,26 @@ void ProccessManager::handleDeath(Program& program) {
         launch(program);
 }
 
+bool ProccessManager::shouldRestart(const Program& program, bool by_signal, int code) {
+    const ProgramConfig& cfg = program.getProgramConfig();
+
+    if (cfg.autorestart == "never")
+        return false;
+
+    if (cfg.autorestart == "always")
+        return true;
+
+    if (by_signal) // death by signal is always unexpected
+        return true;
+
+    for (int expected : cfg.exitcodes)
+        if (code == expected)
+            return false;
+    return true;
+}
+
+// Output reading
+
 void ProccessManager::readFromChild(int fd) {
     Program* program = findByReadFd(fd);
     if (!program)
@@ -294,82 +348,23 @@ void ProccessManager::readFromChild(int fd) {
     }
 }
 
-// launch aux
+// Lookups
 
-std::vector<std::string> ProccessManager::splitCmd(const std::string& cmd) {
-    std::vector<std::string> args;
-    std::istringstream iss(cmd);
-    std::string temp;
-    while(iss >> temp)
-        args.push_back(temp);
-    return args;
+Program* ProccessManager::findByPidFd(int fd) {
+    for (auto& program : m_programs)
+        if (program.getPidFd() == fd)
+            return &program;
+    return nullptr;
 }
 
-void ProccessManager::setupChild(const ProgramConfig& cfg, int out_write, int err_write) {
-    setsid();
-
-    // Need clear mask in child
-    sigset_t empty;
-    sigemptyset(&empty);
-    sigprocmask(SIG_SETMASK, &empty, nullptr);
-    if (cfg.umask >= 0) {
-        mode_t mask = cfg.umask;
-        umask(mask);
-    }
-        
-    if (!cfg.workingdir.empty())
-        if (chdir(cfg.workingdir.c_str()) != 0)
-            _exit(127);
-
-    for (const auto &[key, value] : cfg.env)
-        setenv(key.c_str(), value.c_str(), 1);
-
-    dup2(out_write, STDOUT_FILENO);
-    dup2(err_write, STDERR_FILENO);
+Program* ProccessManager::findByReadFd(int fd) {
+    for (auto& program : m_programs)
+        if (program.getStdoutFd() == fd || program.getStderrFd() == fd)
+            return &program;
+    return nullptr;
 }
 
-void ProccessManager::execProgram(const std::vector<std::string>& args) {
-    std::vector<char*> argv;
-
-    for (const auto& a : args)
-        argv.push_back(const_cast<char*>(a.c_str()));
-    argv.push_back(nullptr);
-    execvp(argv[0], argv.data());
-
-    _exit(127);
-}
-
-int ProccessManager::openLogFile(const std::string& path) {
-    if (path.empty())
-        return -1;
-    return open(path.c_str(), O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, 0644);
-}
-
-// status and aux
-
-std::string ProccessManager::status() const {
-    std::string out;
-
-    for (const auto& program : m_programs) {
-        out += program.getProgramConfig().name;
-        out += "    ";
-        out += stateToString(program.getState());
-
-        if (program.getState() == Program::State::Running
-            || program.getState() == Program::State::Starting) {
-            out += "    pid ";
-            out += std::to_string(program.getPid());
-        }
-
-        out += "\n";
-    }
-
-    return out;
-}
-
-std::string_view ProccessManager::stateToString(Program::State state) const {
-    return m_state_names[static_cast<int>(state)];
-}
+// Commands
 
 std::string ProccessManager::startProccess(const std::string& name) {
     for (auto& program : m_programs) {
@@ -409,8 +404,8 @@ std::string ProccessManager::restartProccess(const std::string& name) {
             if (s == Program::State::Running || s == Program::State::Starting) {
                 int sig = signalFromName(program.getProgramConfig().stopsignal);
                 program.setPendingRestart(true);
-                program.stopping();              // Stopping, no stopped()
-                kill(program.getPid(), sig);     // su señal, no SIGTERM fijo
+                program.stopping();              // Stopping, not stopped()
+                kill(program.getPid(), sig);     // its own signal, not a fixed SIGTERM
                 return name + " restarting";
             }
 
@@ -419,6 +414,32 @@ std::string ProccessManager::restartProccess(const std::string& name) {
         }
     }
     return "no such program: " + name;
+}
+
+// Status and translation helpers
+
+std::string ProccessManager::status() const {
+    std::string out;
+
+    for (const auto& program : m_programs) {
+        out += program.getProgramConfig().name;
+        out += "    ";
+        out += stateToString(program.getState());
+
+        if (program.getState() == Program::State::Running
+            || program.getState() == Program::State::Starting) {
+            out += "    pid ";
+            out += std::to_string(program.getPid());
+        }
+
+        out += "\n";
+    }
+
+    return out;
+}
+
+std::string_view ProccessManager::stateToString(Program::State state) const {
+    return m_state_names[static_cast<int>(state)];
 }
 
 int ProccessManager::signalFromName(const std::string& name) const {
@@ -430,15 +451,4 @@ int ProccessManager::signalFromName(const std::string& name) const {
     if (name == "USR2") return SIGUSR2;
     if (name == "KILL") return SIGKILL;
     return SIGTERM;
-}
-
-bool ProccessManager::hasLivePrograms() const {
-    for (const auto& program : m_programs) {
-        Program::State s = program.getState();
-        if (s == Program::State::Running
-            || s == Program::State::Starting
-            || s == Program::State::Stopping)
-            return true;
-    }
-    return false;
 }
