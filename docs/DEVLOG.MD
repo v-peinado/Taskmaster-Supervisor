@@ -1022,3 +1022,7 @@ toco logica. Lo hago en commits separados por archivo.
 Pendiente la refactorizacion  de logica: partir las funciones largas
 (launch, handleDeath) en subfunciones por responsabilidad, y el handleCommand, que
 es un bloque enorme de else-if.
+
+### 2026-07-27
+
+Empiezo el refactor de logica. Saco un findByName que quita la triplicacion del bucle de busqueda en start/stop/restart, e inicializo los timestamps del Program en el constructor por coherencia. Parto el launch, que era la funcion mas larga: lo dejo como esqueleto de alto nivel y saco createPipes (crear los dos pipes con su limpieza) y setupParentSide (todo el lado padre); el fork lo dejo a la vista porque la bifurcacion hijo/padre es el corazon de la funcion. De paso arreglo dos bugs: el chequeo de pidfd < 0 estaba en handleDeath como codigo muerto y lo muevo a setupParentSide, que es donde puede fallar de verdad; y el quit no registraba nada en el log al salir (Ctrl-C si, porque va por handleSignal), asi que le añado su log para que los dos caminos de salida dejen rastro. Probado con la bateria: arranque, muerte y relanzado, stop con SIGKILL y salida limpia, mismo comportamiento que antes.
