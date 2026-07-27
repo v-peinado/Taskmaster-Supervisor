@@ -10,9 +10,10 @@ Program::Program(const ProgramConfig& cfg)
     , m_pid(-1)
     , m_state(State::Stopped)
     , m_restarts(0)
+    , m_start_time(std::chrono::steady_clock::now())
+    , m_stop_time(std::chrono::steady_clock::now())
     , m_pending_restart(false)
     {}
-
 // State transitions
 
 void Program::started(pid_t pid, ProcessIO io) {
