@@ -350,6 +350,13 @@ void ProccessManager::readFromChild(int fd) {
 
 // Lookups
 
+Program* ProccessManager::findByName(const std::string& name) {
+    for (auto& program : m_programs)
+        if (program.getProgramConfig().name == name)
+            return &program;
+    return nullptr;
+}
+
 Program* ProccessManager::findByPidFd(int fd) {
     for (auto& program : m_programs)
         if (program.getPidFd() == fd)
@@ -367,53 +374,49 @@ Program* ProccessManager::findByReadFd(int fd) {
 // Commands
 
 std::string ProccessManager::startProccess(const std::string& name) {
-    for (auto& program : m_programs) {
-        if (program.getProgramConfig().name == name) {
-            Program::State s = program.getState();
-            if (s == Program::State::Running || s == Program::State::Starting)
-                return name + " is already running";
+    Program* program = findByName(name);
+    if (!program)
+        return "no such program: " + name;
 
-            launch(program);
-            return name + " started";
-        }
-    }
-    return "no such program: " + name;
+    Program::State s = program->getState();
+    if (s == Program::State::Running || s == Program::State::Starting)
+        return name + " is already running";
+
+    launch(*program);
+    return name + " started";
 }
 
 std::string ProccessManager::stopProccess(const std::string& name) {
-    for (auto& program : m_programs) {
-        if (program.getProgramConfig().name == name) {
-            Program::State s = program.getState();
-            if (s != Program::State::Running && s != Program::State::Starting)
-                return name + " is not running";
+    Program* program = findByName(name);
+    if (!program)
+        return "no such program: " + name;
 
-            int sig = signalFromName(program.getProgramConfig().stopsignal);
-            program.stopping();
-            kill(program.getPid(), sig);
-            return name + " stopping";
-        }
-    }
-    return "no such program: " + name;
+    Program::State s = program->getState();
+    if (s != Program::State::Running && s != Program::State::Starting)
+        return name + " is not running";
+
+    int sig = signalFromName(program->getProgramConfig().stopsignal);
+    program->stopping();
+    kill(program->getPid(), sig);
+    return name + " stopping";
 }
 
 std::string ProccessManager::restartProccess(const std::string& name) {
-    for (auto& program : m_programs) {
-        if (program.getProgramConfig().name == name) {
-            Program::State s = program.getState();
+    Program* program = findByName(name);
+    if (!program)
+        return "no such program: " + name;
 
-            if (s == Program::State::Running || s == Program::State::Starting) {
-                int sig = signalFromName(program.getProgramConfig().stopsignal);
-                program.setPendingRestart(true);
-                program.stopping();              // Stopping, not stopped()
-                kill(program.getPid(), sig);     // its own signal, not a fixed SIGTERM
-                return name + " restarting";
-            }
-
-            launch(program);
-            return name + " started";
-        }
+    Program::State s = program->getState();
+    if (s == Program::State::Running || s == Program::State::Starting) {
+        int sig = signalFromName(program->getProgramConfig().stopsignal);
+        program->setPendingRestart(true);
+        program->stopping();              // Stopping, not stopped()
+        kill(program->getPid(), sig);     // its own signal, not a fixed SIGTERM
+        return name + " restarting";
     }
-    return "no such program: " + name;
+
+    launch(*program);
+    return name + " started";
 }
 
 // Status and translation helpers

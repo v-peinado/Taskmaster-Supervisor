@@ -62,6 +62,7 @@ class ProccessManager {
         void readFromChild(int fd);
 
         // Lookups
+        Program* findByName(const std::string& name);
         Program* findByPidFd(int fd);
         Program* findByReadFd(int fd);
 
