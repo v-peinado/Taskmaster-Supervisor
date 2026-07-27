@@ -43,12 +43,15 @@ class ProccessManager {
 
         // Launch
         void launch(Program& program);
+        bool createPipes(int out_pipe[2], int err_pipe[2]);
+        void setupParentSide(Program& program, pid_t pid, int out_pipe[2], int err_pipe[2]);
 
         // Launch helpers
         std::vector<std::string> splitCmd(const std::string& cmd);
         void setupChild(const ProgramConfig& cfg, int out_write, int err_write);
         void execProgram(const std::vector<std::string>& args);
         int openLogFile(const std::string& path);
+
 
         // Monitoring
         void confirmStarted();

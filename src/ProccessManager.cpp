@@ -73,7 +73,7 @@ void ProccessManager::launch(Program& program) {
     const ProgramConfig& cfg = program.getProgramConfig();
     std::vector<std::string> args = splitCmd(cfg.cmd);
 
-    if(args.empty()) {
+    if (args.empty()) {
         m_logger.log(Logger::LogLevel::Error, "Empty cmd for " + cfg.name);
         program.setFatalError();
         return;
@@ -81,33 +81,43 @@ void ProccessManager::launch(Program& program) {
 
     int out_pipe[2];
     int err_pipe[2];
-    if (pipe2(out_pipe, O_CLOEXEC) < 0) {
+    if (!createPipes(out_pipe, err_pipe)) {
         m_logger.log(Logger::LogLevel::Error, "pipe failed for " + cfg.name);
-        program.setFatalError();
-        return;
-    }
-    if (pipe2(err_pipe, O_CLOEXEC) < 0) {
-        m_logger.log(Logger::LogLevel::Error, "pipe failed for " + cfg.name);
-        close(out_pipe[0]); close(out_pipe[1]);   // clean up the pipe that was created
         program.setFatalError();
         return;
     }
 
     pid_t pid = fork();
-    if(pid < 0) {
+    if (pid < 0) {
         m_logger.log(Logger::LogLevel::Error, "fork failed for " + cfg.name);
-        close(out_pipe[0]);
-        close(out_pipe[1]);
-        close(err_pipe[0]);
-        close(err_pipe[1]);
+        close(out_pipe[0]); close(out_pipe[1]);
+        close(err_pipe[0]); close(err_pipe[1]);
         program.setFatalError();
         return;
     }
-    if(pid == 0) {
-        // setup child and exec
+    if (pid == 0) {
         setupChild(cfg, out_pipe[1], err_pipe[1]);
         execProgram(args);
     }
+
+    setupParentSide(program, pid, out_pipe, err_pipe);
+}
+
+bool ProccessManager::createPipes(int out_pipe[2], int err_pipe[2]) {
+    if (pipe2(out_pipe, O_CLOEXEC) < 0)
+        return false;
+
+    if (pipe2(err_pipe, O_CLOEXEC) < 0) {
+        close(out_pipe[0]);       // the first pipe was created, clean it up
+        close(out_pipe[1]);
+        return false;
+    }
+    return true;
+}
+
+void ProccessManager::setupParentSide(Program& program, pid_t pid,
+                                      int out_pipe[2], int err_pipe[2]) {
+    const ProgramConfig& cfg = program.getProgramConfig();
 
     close(out_pipe[1]);
     close(err_pipe[1]);
@@ -116,6 +126,9 @@ void ProccessManager::launch(Program& program) {
     fcntl(err_pipe[0], F_SETFL, O_NONBLOCK);
 
     int pidfd = syscall(SYS_pidfd_open, pid, 0);
+    if (pidfd < 0)
+        m_logger.log(Logger::LogLevel::Error,
+            "pidfd_open failed for " + cfg.name + " (kernel too old?)");
 
     int log_out = openLogFile(cfg.stdout_file);
     int log_err = openLogFile(cfg.stderr_file);
@@ -123,9 +136,9 @@ void ProccessManager::launch(Program& program) {
     Program::ProcessIO io;
     io.stdout_read = Fd(out_pipe[0]);
     io.stderr_read = Fd(err_pipe[0]);
-    io.stdout_log = Fd(log_out);
-    io.stderr_log = Fd(log_err);
-    io.pidfd = Fd(pidfd);
+    io.stdout_log  = Fd(log_out);
+    io.stderr_log  = Fd(log_err);
+    io.pidfd       = Fd(pidfd);
 
     program.started(pid, std::move(io));
 
@@ -237,10 +250,6 @@ void ProccessManager::checkStopTimeouts() {
 
 void ProccessManager::handleDeath(Program& program) {
     int pidfd = program.getPidFd();
-    if (pidfd < 0) {
-        m_logger.log(Logger::LogLevel::Error,
-            "pidfd_open failed for " + program.getProgramConfig().name + " (kernel too old?)");
-    }
 
     siginfo_t info;
     info.si_pid = 0;
