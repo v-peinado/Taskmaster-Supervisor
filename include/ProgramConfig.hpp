@@ -1,23 +1,23 @@
 #pragma once
 
-#include <iostream>
+#include <string>
 #include <vector>
 #include <map>
 
 struct ProgramConfig {
 
-    std::string name;          // clave del YAML: "nginx"
-    std::string cmd;           // "/usr/local/bin/nginx -c ..."  (se trocea al lanzar)
-    int         umask       = -1;          // -1 = no tocar (ojo: parsear en octal)
-    std::string workingdir;                // vacío = heredar
+    std::string name;          // YAML key: "nginx"
+    std::string cmd;           // "/usr/local/bin/nginx -c ..."  (split at launch time)
+    int         umask       = -1;           // -1 = leave untouched (parse as octal)
+    std::string workingdir;                 // empty = inherit
     bool        autostart   = true;
     std::string autorestart = "unexpected"; // always | never | unexpected
     std::vector<int> exitcodes = {0};
     int         startretries = 3;
-    int         starttime    = 1;           // segundos
+    int         starttime    = 1;           // seconds
     std::string stopsignal   = "TERM";      // TERM, USR1...
-    int         stoptime     = 10;          // segundos
-    std::string stdout_file;                // vacío = descartar
-    std::string stderr_file;                // vacío = descartar
+    int         stoptime     = 10;          // seconds
+    std::string stdout_file;                // empty = discard
+    std::string stderr_file;                // empty = discard
     std::map<std::string, std::string> env;
 };
