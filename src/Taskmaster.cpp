@@ -105,8 +105,11 @@ void Taskmaster::handleCommand() {
         return;
     }
 
-    if (cmd->name == "quit")
+    if (cmd->name == "quit") {
+        m_logger.log(Logger::LogLevel::Info, "Quit command received, shutting down");
         m_shutting_down = true;
+    }
+        
     else if (cmd->name == "status")
         m_shell.showResponse(m_proccess_manager.status());
     else if (cmd->name == "help")
