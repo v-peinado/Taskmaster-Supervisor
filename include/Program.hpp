@@ -29,48 +29,48 @@ class Program {
         Program(const Program&) = delete;
         Program& operator=(const Program&) = delete;
         Program(Program&&) = default;
-        Program &operator=(Program&&) = default;
+        Program& operator=(Program&&) = default;
 
-        // Setters // Transitions
-
+        // State transitions
         void started(pid_t pid, ProcessIO io);
+        void setRunning();
         void exited();
-        void stopped(); 
+        void stopping();
+        void stopped();
         void setFatalError();
         void incRestartNum();
         void resetRestarts();
-        void setRunning();
-        void stopping();
+        void setPendingRestart(bool value);
 
         // Getters
-        int  getStdoutFd() const;
-        int  getStderrFd() const;
         const ProgramConfig& getProgramConfig() const;
         pid_t getPid() const;
         State getState() const;
-        int getRestarts() const;
-        int getStdoutLogFd() const;
-        int getStderrLogFd() const;
-        int getPidFd() const;
+        int   getRestarts() const;
+        int   getStdoutFd() const;
+        int   getStderrFd() const;
+        int   getStdoutLogFd() const;
+        int   getStderrLogFd() const;
+        int   getPidFd() const;
+        bool  isPendingRestart() const;
 
-        //aux
+        // Timing windows
+        bool startWindowPassed() const;
+        bool stopWindowPassed() const;
+
+        // Fd cleanup
         void closeStdout();
         void closeStderr();
         void closePidFd();
-        bool startWindowPassed() const;
-        bool stopWindowPassed() const;
-        // restart logic
-        void setPendingRestart(bool value);
-        bool isPendingRestart() const;
 
     private:
 
-        ProgramConfig   m_config;
-        pid_t           m_pid;
-        State           m_state;
-        int             m_restarts;
-        ProcessIO       m_io;
+        ProgramConfig                         m_config;
+        pid_t                                 m_pid;
+        State                                 m_state;
+        int                                   m_restarts;
+        ProcessIO                             m_io;
         std::chrono::steady_clock::time_point m_start_time;
         std::chrono::steady_clock::time_point m_stop_time;
-        bool m_pending_restart;
+        bool                                  m_pending_restart;
 };
