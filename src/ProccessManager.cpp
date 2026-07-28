@@ -258,7 +258,6 @@ void ProccessManager::handleDeath(Program& program) {
     bool by_signal = (info.si_code != CLD_EXITED);
     int  code = info.si_status;
     bool was_starting = !program.startWindowPassed();
-
     bool was_stopping = (program.getState() == Program::State::Stopping);
 
     if (by_signal)
@@ -271,33 +270,47 @@ void ProccessManager::handleDeath(Program& program) {
     m_event_loop.remove(pidfd);
     program.closePidFd();
 
+    // voluntary stop: reaped and cleaned, decide restart
     if (was_stopping) {
-        program.stopped();
-        if (program.isPendingRestart()) {
-            program.setPendingRestart(false);
-            launch(program);
-        }
+        handleStoppedDeath(program);
         return;
     }
 
     program.exited();
 
+    // died within its start window: start failure
     if (was_starting) {
-        program.incRestartNum();
-        if (program.getRestarts() >= program.getProgramConfig().startretries) {
-            program.setFatalError();
-            m_logger.log(Logger::LogLevel::Error,
-                program.getProgramConfig().name + " failed to start, giving up");
-            return;
-        }
-        m_logger.log(Logger::LogLevel::Warning,
-            program.getProgramConfig().name + " failed to start, retrying");
-        launch(program);
+        handleStartFailure(program);
         return;
     }
 
+    // stable death: apply the restart policy
     if (shouldRestart(program, by_signal, code))
         launch(program);
+}
+
+void ProccessManager::handleStoppedDeath(Program& program) {
+    program.stopped();
+
+    if (program.isPendingRestart()) {
+        program.setPendingRestart(false);
+        launch(program);
+    }
+}
+
+void ProccessManager::handleStartFailure(Program& program) {
+    program.incRestartNum();
+
+    if (program.getRestarts() >= program.getProgramConfig().startretries) {
+        program.setFatalError();
+        m_logger.log(Logger::LogLevel::Error,
+            program.getProgramConfig().name + " failed to start, giving up");
+        return;
+    }
+
+    m_logger.log(Logger::LogLevel::Warning,
+        program.getProgramConfig().name + " failed to start, retrying");
+    launch(program);
 }
 
 bool ProccessManager::shouldRestart(const Program& program, bool by_signal, int code) {

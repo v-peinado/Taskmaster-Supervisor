@@ -59,6 +59,8 @@ class ProccessManager {
 
         // Process death
         void handleDeath(Program& program);
+        void handleStoppedDeath(Program& program);
+        void handleStartFailure(Program& program);
         bool shouldRestart(const Program& program, bool by_signal, int code);
 
         // Output reading
