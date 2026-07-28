@@ -96,6 +96,7 @@ void Taskmaster::handleCommand() {
     std::optional<Shell::Command> cmd = m_shell.readCommand();
 
     if (!cmd) {                          // EOF (Ctrl-D)
+        m_logger.log(Logger::LogLevel::Info, "EOF received, shutting down");
         m_shutting_down = true;
         return;
     }
@@ -105,44 +106,62 @@ void Taskmaster::handleCommand() {
         return;
     }
 
-    if (cmd->name == "quit") {
-        m_logger.log(Logger::LogLevel::Info, "Quit command received, shutting down");
-        m_shutting_down = true;
+    switch (parseCommandType(cmd->name)) {
+        case CommandType::Status:
+            m_shell.showResponse(m_proccess_manager.status());
+            break;
+        case CommandType::Start:
+            if (cmd->args.empty())
+                m_shell.showResponse("usage: start <program>");
+            else
+                m_shell.showResponse(m_proccess_manager.startProccess(cmd->args[0]));
+            break;
+        case CommandType::Stop:
+            if (cmd->args.empty())
+                m_shell.showResponse("usage: stop <program>");
+            else
+                m_shell.showResponse(m_proccess_manager.stopProccess(cmd->args[0]));
+            break;
+        case CommandType::Restart:
+            if (cmd->args.empty())
+                m_shell.showResponse("usage: restart <program>");
+            else
+                m_shell.showResponse(m_proccess_manager.restartProccess(cmd->args[0]));
+            break;
+        case CommandType::Reload:
+            m_shell.showResponse("reload not implemented yet");
+            break;
+        case CommandType::Help:
+            m_shell.showResponse(
+                "commands:\n"
+                "  status              show all programs and their state\n"
+                "  start <program>     start a program\n"
+                "  stop <program>      stop a program\n"
+                "  restart <program>   restart a program\n"
+                "  reload              reload the config file\n"
+                "  help                show this help\n"
+                "  quit                exit taskmaster");
+            break;
+        case CommandType::Quit:
+            m_logger.log(Logger::LogLevel::Info, "Quit command received, shutting down");
+            m_shutting_down = true;
+            break;
+        case CommandType::Unknown:
+            m_shell.showResponse("unknown command: " + cmd->name);
+            break;
     }
-        
-    else if (cmd->name == "status")
-        m_shell.showResponse(m_proccess_manager.status());
-    else if (cmd->name == "help")
-        m_shell.showResponse(
-            "commands:\n"
-            "  status              show all programs and their state\n"
-            "  start <program>     start a program\n"
-            "  stop <program>      stop a program\n"
-            "  restart <program>   restart a program\n"
-            "  reload              reload the config file\n"
-            "  help                show this help\n"
-            "  quit                exit taskmaster");
-    else if (cmd->name == "start") {
-        if (cmd->args.empty())
-            m_shell.showResponse("usage: start <program>");
-        else
-            m_shell.showResponse(m_proccess_manager.startProccess(cmd->args[0]));
-    }
-    else if (cmd->name == "stop") {
-        if (cmd->args.empty())
-            m_shell.showResponse("usage: stop <program>");
-        else
-            m_shell.showResponse(m_proccess_manager.stopProccess(cmd->args[0]));
-    }
-    else if (cmd->name == "restart") {
-        if (cmd->args.empty())
-            m_shell.showResponse("usage: restart <program>");
-        else
-            m_shell.showResponse(m_proccess_manager.restartProccess(cmd->args[0]));
-    }
-    else
-        m_logger.log(Logger::LogLevel::Log, cmd->name);
 
     if (!m_shutting_down)
         m_shell.prompt();
+}
+
+Taskmaster::CommandType Taskmaster::parseCommandType(const std::string& name) const {
+    if (name == "status")  return CommandType::Status;
+    if (name == "start")   return CommandType::Start;
+    if (name == "stop")    return CommandType::Stop;
+    if (name == "restart") return CommandType::Restart;
+    if (name == "reload")  return CommandType::Reload;
+    if (name == "help")    return CommandType::Help;
+    if (name == "quit")    return CommandType::Quit;
+    return CommandType::Unknown;
 }

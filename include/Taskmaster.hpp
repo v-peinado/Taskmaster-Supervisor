@@ -48,4 +48,18 @@ class Taskmaster {
         // Event handlers
         void handleSignal();
         void handleCommand();
+
+        // Command parsing
+        enum class CommandType {
+            Status,
+            Start,
+            Stop,
+            Restart,
+            Reload,
+            Help,
+            Quit,
+            Unknown
+        };
+
+        CommandType parseCommandType(const std::string& name) const;
 };
