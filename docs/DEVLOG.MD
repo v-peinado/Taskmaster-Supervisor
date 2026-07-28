@@ -1026,3 +1026,41 @@ es un bloque enorme de else-if.
 ### 2026-07-27
 
 Empiezo el refactor de logica. Saco un findByName que quita la triplicacion del bucle de busqueda en start/stop/restart, e inicializo los timestamps del Program en el constructor por coherencia. Parto el launch, que era la funcion mas larga: lo dejo como esqueleto de alto nivel y saco createPipes (crear los dos pipes con su limpieza) y setupParentSide (todo el lado padre); el fork lo dejo a la vista porque la bifurcacion hijo/padre es el corazon de la funcion. De paso arreglo dos bugs: el chequeo de pidfd < 0 estaba en handleDeath como codigo muerto y lo muevo a setupParentSide, que es donde puede fallar de verdad; y el quit no registraba nada en el log al salir (Ctrl-C si, porque va por handleSignal), asi que le añado su log para que los dos caminos de salida dejen rastro. Probado con la bateria: arranque, muerte y relanzado, stop con SIGKILL y salida limpia, mismo comportamiento que antes.
+
+### 2026-07-28
+
+Ultimo paso del refactor de logica: parto el handleDeath, que era la otra funcion
+larga. Queda como un enrutador que reapea la muerte, la loguea y decide por que rama
+va, y saco dos subfunciones: handleStoppedDeath (parada voluntaria, marca Stopped y
+si habia pending_restart relanza) y handleStartFailure (fallo de arranque, cuenta
+reintentos y o va a Fatal o relanza). El orden de las comprobaciones se mantiene
+exacto porque era critico. Mismo comportamiento, solo mejor repartido.
+
+[28/07/2026-02:38:09] [ INFO ] - Application: Taskmaster is running
+[28/07/2026-02:38:09] [ INFO ] - Application: The config file is conf.yml
+[28/07/2026-02:38:09] [ WARNING ] - Application: The conf file is not validated
+[28/07/2026-02:38:09] [ INFO ] - Application: Started oneshot_never (pid 823442)
+[28/07/2026-02:38:09] [ INFO ] - Application: Started sleeper (pid 823443)
+[28/07/2026-02:38:09] [ INFO ] - Application: Started stubborn_never (pid 823444)
+[28/07/2026-02:38:09] [ INFO ] - Application: oneshot_never running
+[28/07/2026-02:38:09] [ INFO ] - Application: oneshot_never exited, code 0
+[28/07/2026-02:38:11] [ INFO ] - Application: sleeper running
+[28/07/2026-02:38:11] [ INFO ] - Application: stubborn_never running
+[28/07/2026-02:38:28] [ INFO ] - Application: Started failer_always (pid 823550)
+[28/07/2026-02:38:28] [ INFO ] - Application: failer_always exited, code 1
+[28/07/2026-02:38:28] [ WARNING ] - Application: failer_always failed to start, retrying
+[28/07/2026-02:38:28] [ INFO ] - Application: Started failer_always (pid 823551)
+[28/07/2026-02:38:28] [ INFO ] - Application: failer_always exited, code 1
+[28/07/2026-02:38:28] [ WARNING ] - Application: failer_always failed to start, retrying
+[28/07/2026-02:38:28] [ INFO ] - Application: Started failer_always (pid 823552)
+[28/07/2026-02:38:28] [ INFO ] - Application: failer_always exited, code 1
+[28/07/2026-02:38:28] [ ERROR ] - Application: failer_always failed to start, giving up
+[28/07/2026-02:38:54] [ WARNING ] - Application: stubborn_never did not stop in time, sending SIGKILL
+[28/07/2026-02:38:54] [ INFO ] - Application: stubborn_never killed by signal 9
+[28/07/2026-02:38:54] [ INFO ] - Application: Started stubborn_never (pid 823683)
+[28/07/2026-02:38:56] [ INFO ] - Application: stubborn_never running
+[28/07/2026-02:39:25] [ INFO ] - Application: sleeper killed by signal 15
+[28/07/2026-02:40:17] [ INFO ] - Application: Shutdown signal received, quitting
+[28/07/2026-02:40:17] [ INFO ] - Application: Sent TERM to stubborn_never
+[28/07/2026-02:40:20] [ WARNING ] - Application: stubborn_never did not stop in time, sending SIGKILL
+[28/07/2026-02:40:20] [ INFO ] - Application: stubborn_never killed by signal 9
