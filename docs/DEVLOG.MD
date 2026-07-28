@@ -1064,3 +1064,35 @@ exacto porque era critico. Mismo comportamiento, solo mejor repartido.
 [28/07/2026-02:40:17] [ INFO ] - Application: Sent TERM to stubborn_never
 [28/07/2026-02:40:20] [ WARNING ] - Application: stubborn_never did not stop in time, sending SIGKILL
 [28/07/2026-02:40:20] [ INFO ] - Application: stubborn_never killed by signal 9
+
+
+### 2026-07-28
+
+Cambio el bloque de else-if del handleCommand por un switch. Como el switch en C++
+no admite strings, creo un enum CommandType (privado en la clase, como el patron de
+signalFromName) y una funcion parseCommandType que traduce el string del comando
+al enum. Sin default en el switch, asi con -Wall el compilador me avisa si añado un
+comando al enum y me olvido de manejarlo.
+
+Con esto doy por terminado el refactor: las dos funciones largas partidas (launch y
+handleDeath), la triplicacion de busqueda fuera (findByName), los timestamps
+inicializados, el dispatcher a switch, y toda la limpieza estetica previa.
+
+### 2026-07-28
+
+Se va a empezar el parser de verdad, hasta ahora solo lo simulabamos, usaremos lib
+yaml-cpp para el parseo del fichero (el subject permite libreria para leer el
+config).
+
+numprocs lo maneja el parser, no va al struct: si pones numprocs 3 se generan
+tres PConfig con nombre_0, nombre_1, nombre_2; si es 1 el nombre se queda tal cual.
+Cada ProgramConfig representa una sola instancia.
+
+Politica de errores, imitando a supervisor y distinguiendo dos momentos: si el config
+esta mal escrito (sintaxis mala, falta el cmd, un valor invalido, nombres
+duplicados) el parser lanza una excepcion y taskmaster no arranca, porque un config
+roto es un error del operador que hay que corregir, no algo que arrancar a medias. En
+cambio si el config esta bien pero un programa falla al ejecutarse, eso no es cosa
+del parser: los demas arrancan igual y ese acaba en FATAL, que ya lo hace el manager.
+Supervisor no asume dependencias entre programas, cada uno es independiente, asi que
+un fallo de uno no tumba a los otros.
