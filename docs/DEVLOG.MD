@@ -1119,3 +1119,32 @@ program 'broken': missing 'cmd' y no arranca.
 
 
 IMPORTANTE: hay que instalar libyaml-cpp-dev en la maquina
+
+
+### 2026-07-29
+
+El ProccessManager esta creciendo demasiado: 478 lineas y 22 metodos, casi el triple que la
+siguiente clase. Y no es solo tamaño, tiene ya varias razones distintas para cambiar
+(lanzamiento, supervision, politicas, comandos) y encima le viene el reload.
+
+La primera idea, dividirla sin mas, no vale: si todas las clases nuevas siguen tocando
+m_programs no elimino el acoplamiento, solo lo reparto entre mas archivos. Aunque use inyeccion
+de dependencias, varias clases escribiendo el mismo dato quedan unidas por lo que hacen con el,
+y eso no se ve en las firmas. Ya me paso con el bug del restart, que ponia Stopped mientras el
+handleDeath buscaba Stopping: compilaba perfecto y estaba roto.
+
+El criterio es la propiedad de escritura: un dato se puede compartir para leerlo (medio
+proyecto consulta el estado de un programa), pero solo su dueño lo modifica, y por transiciones
+atomicas que no lo dejan a medias. Compartir lectura no acopla de forma peligrosa; compartir
+escritura si.
+
+Comprobado que el proyecto ya lo cumple sin excepciones: m_programs y las nueve transiciones del
+Program solo se tocan desde el PM. Y aunque el EventLoop y el Logger los usan dos clases,
+ahi no hay dato compartido: cada una registra SUS fds o escribe SUS lineas. Comparten el
+wrapper, no el dato.
+
+Asi que al dividir, el estado se queda en el PM y fuera solo saco MECANICA: clases sin estado
+propio que reciben lo que necesitan, operan y se olvidan. Primer candidato, el lanzamiento
+(fork, pipes, exec, registrar fds). Pero despues de cerrar el mandatory, y sabiendo que el
+bonus cliente/servidor va a redibujar fronteras igualmente.
+
