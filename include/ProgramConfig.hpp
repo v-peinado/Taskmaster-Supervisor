@@ -20,4 +20,5 @@ struct ProgramConfig {
     std::string stdout_file;                // empty = discard
     std::string stderr_file;                // empty = discard
     std::map<std::string, std::string> env;
+    bool operator==(const ProgramConfig&) const = default;
 };

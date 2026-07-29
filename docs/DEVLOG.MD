@@ -1148,3 +1148,23 @@ propio que reciben lo que necesitan, operan y se olvidan. Primer candidato, el l
 (fork, pipes, exec, registrar fds). Pero despues de cerrar el mandatory, y sabiendo que el
 bonus cliente/servidor va a redibujar fronteras igualmente.
 
+### 2026-07-29
+
+Añado el operator== a "ProgramConfig" para poder comparar configuraciones en el reload, que
+necesito saber si un programa ha cambiado. Lo pongo con = default, asi el compilador genera la
+comparacion campo por campo y no tengo que escribirla ni acordarme de actualizarla cada vez que
+añada un campo al struct.
+
+Es necesario aclarar, un struct puede tener metodos y
+sobrecargas igual que una clase; en C++ la unica diferencia real entre struct y class es el
+acceso por defecto (publico o privado). Aunque el uso es por conveniencia mas que por capacidad
+uso structs para datos basicamente, y clases para encapsular estados y sobretodo invariantes.
+
+Ademas es conveniente en este caso, ya que programconfig es un TIPO, que circula en varias partes
+del proyecto y que contenga su propia comparacion, al igual que por ejemplo un string, evita tener que
+realizar funciones dedicadas.
+
+NOTA IMPORTANTE: en este proyecto he intentado llevar a rajatabla el concepto de propiedad, como manera de 
+gestion adecuada de los recursos, aun asi, igual que refactorizamos y repasamos codigo, es necesario que una
+vez acabado el hotreload, se haga un repaso general del flujo para ver si se respeta, y usar recursos sintacticos
+del lenguaje para asefgurarlo.
