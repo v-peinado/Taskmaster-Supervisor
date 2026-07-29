@@ -1,67 +1,161 @@
 #include "Parser.hpp"
-#include "ProgramConfig.hpp"
-#include <vector>
+#include <stdexcept>
+#include <string_view>
+#include <array>
 
-
-//Parser - Constructors/Destructors
+// Constructor
 
 Parser::Parser(const std::string& path_file)
     : m_conf_path(path_file) {}
 
-// Parser - Public meth
+// Public methods
 
 std::vector<ProgramConfig> Parser::loadProgramsConf() {
     std::vector<ProgramConfig> programs;
 
+    YAML::Node root = YAML::LoadFile(m_conf_path);
 
-    // Caso: never + muerte normal -> NO debe relanzarse
-    programs.push_back(ProgramConfig{
-        .name         = "oneshot_never",
-        .cmd          = "/bin/echo hello",
-        .autostart    = true,
-        .autorestart  = "never",
-        .starttime    = 0,
-        .stdout_file  = "./logs/oneshot_never.stdout",
-        .stderr_file  = "./logs/oneshot_never.stderr",
-    });
+    if (!root["programs"] || !root["programs"].IsMap())
+        throw std::runtime_error("config must have a 'programs' map");
 
-    // Caso: always + muerte instantanea -> reintenta y acaba en FATAL
-    programs.push_back(ProgramConfig{
-        .name         = "failer_always",
-        .cmd          = "/bin/false",
-        .autostart    = false,          // manual, para no ensuciar el arranque
-        .autorestart  = "always",
-        .startretries = 3,
-        .starttime    = 2,
-        .stdout_file  = "./logs/failer_always.stdout",
-        .stderr_file  = "./logs/failer_always.stderr",
-    });
+    for (const auto& entry : root["programs"]) {
+        std::string   name = entry.first.as<std::string>();
+        YAML::Node    node = entry.second;
 
-    // Caso: larga vida, obedece señales -> RUNNING, stop limpio, restart limpio
-    programs.push_back(ProgramConfig{
-        .name         = "sleeper",
-        .cmd          = "/bin/sleep 1000000",
-        .autostart    = true,
-        .autorestart  = "unexpected",
-        .starttime    = 2,
-        .stopsignal   = "TERM",
-        .stoptime     = 5,
-        .stdout_file  = "./logs/sleeper.stdout",
-        .stderr_file  = "./logs/sleeper.stderr",
-    });
+        if (!node.IsMap())
+            throw std::runtime_error("program '" + name + "' must be a map");
 
-    // Caso: terco (ignora TERM) -> stop acaba en SIGKILL
-    programs.push_back(ProgramConfig{
-        .name         = "stubborn_never",
-        .cmd          = "./test/stubborn.sh",
-        .autostart    = true,
-        .autorestart  = "never",        // never: el restart solo puede venir del flag
-        .starttime    = 2,
-        .stopsignal   = "TERM",
-        .stoptime     = 3,
-        .stdout_file  = "./logs/stubborn_never.stdout",
-        .stderr_file  = "./logs/stubborn_never.stderr",
-    });
+        ProgramConfig base = parseProgram(name, node);
+
+        int numprocs = 1;
+        if (node["numprocs"])
+            numprocs = node["numprocs"].as<int>();
+        if (numprocs < 1)
+            throw std::runtime_error("program '" + name + "': numprocs must be >= 1");
+
+        expandNumprocs(base, numprocs, programs);
+    }
+
+    if (programs.empty())
+        throw std::runtime_error("config has no programs");
 
     return programs;
+}
+
+// Program parsing
+
+ProgramConfig Parser::parseProgram(const std::string& name, const YAML::Node& node) {
+    ProgramConfig cfg;
+    cfg.name = name;
+
+    // cmd is the only mandatory field
+    if (!node["cmd"])
+        throw std::runtime_error("program '" + name + "': missing 'cmd'");
+    cfg.cmd = node["cmd"].as<std::string>();
+    if (cfg.cmd.empty())
+        throw std::runtime_error("program '" + name + "': 'cmd' is empty");
+
+    // optional fields, keep the struct default when absent
+    if (node["workingdir"])   cfg.workingdir   = node["workingdir"].as<std::string>();
+    if (node["autostart"])    cfg.autostart    = node["autostart"].as<bool>();
+    if (node["startretries"]) cfg.startretries = node["startretries"].as<int>();
+    if (node["starttime"])    cfg.starttime    = node["starttime"].as<int>();
+    if (node["stoptime"])     cfg.stoptime     = node["stoptime"].as<int>();
+    if (node["stdout"])       cfg.stdout_file  = node["stdout"].as<std::string>();
+    if (node["stderr"])       cfg.stderr_file  = node["stderr"].as<std::string>();
+
+    if (node["autorestart"]) {
+        cfg.autorestart = node["autorestart"].as<std::string>();
+        validateAutorestart(cfg.autorestart, name);
+    }
+
+    if (node["stopsignal"]) {
+        cfg.stopsignal = node["stopsignal"].as<std::string>();
+        validateStopsignal(cfg.stopsignal, name);
+    }
+
+    if (node["umask"])     cfg.umask     = parseUmask(node["umask"]);
+    if (node["exitcodes"]) cfg.exitcodes = parseExitcodes(node["exitcodes"]);
+    if (node["env"])       cfg.env       = parseEnv(node["env"]);
+
+    return cfg;
+}
+
+void Parser::expandNumprocs(const ProgramConfig& base, int numprocs,
+                            std::vector<ProgramConfig>& programs) {
+    if (numprocs == 1) {
+        checkDuplicateName(base.name, programs);
+        programs.push_back(base);
+        return;
+    }
+
+    for (int i = 0; i < numprocs; i++) {
+        ProgramConfig instance = base;
+        instance.name = base.name + "_" + std::to_string(i);
+        checkDuplicateName(instance.name, programs);
+        programs.push_back(instance);
+    }
+}
+
+// Field parsing helpers
+
+int Parser::parseUmask(const YAML::Node& node) {
+    std::string text = node.as<std::string>();
+    return std::stoi(text, nullptr, 8);          // octal
+}
+
+std::vector<int> Parser::parseExitcodes(const YAML::Node& node) {
+    std::vector<int> codes;
+
+    if (node.IsSequence()) {                     // exitcodes: [0, 2]
+        for (const auto& item : node)
+            codes.push_back(item.as<int>());
+    }
+    else {                                       // exitcodes: 0
+        codes.push_back(node.as<int>());
+    }
+
+    if (codes.empty())
+        throw std::runtime_error("exitcodes cannot be empty");
+
+    return codes;
+}
+
+std::map<std::string, std::string> Parser::parseEnv(const YAML::Node& node) {
+    std::map<std::string, std::string> env;
+
+    if (!node.IsMap())
+        throw std::runtime_error("'env' must be a map");
+
+    for (const auto& entry : node)
+        env[entry.first.as<std::string>()] = entry.second.as<std::string>();
+
+    return env;
+}
+
+// Validation
+
+void Parser::validateAutorestart(const std::string& value, const std::string& program) {
+    if (value != "always" && value != "never" && value != "unexpected")
+        throw std::runtime_error("program '" + program +
+            "': autorestart must be always, never or unexpected");
+}
+
+void Parser::validateStopsignal(const std::string& value, const std::string& program) {
+    static const std::array<std::string_view, 7> valid {
+        "TERM", "INT", "QUIT", "HUP", "USR1", "USR2", "KILL"
+    };
+
+    for (const auto& sig : valid)
+        if (value == sig)
+            return;
+
+    throw std::runtime_error("program '" + program + "': unknown stopsignal " + value);
+}
+
+void Parser::checkDuplicateName(const std::string& name,
+                                const std::vector<ProgramConfig>& programs) {
+    for (const auto& program : programs)
+        if (program.name == name)
+            throw std::runtime_error("duplicate program name: " + name);
 }

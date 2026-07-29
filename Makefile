@@ -17,6 +17,9 @@ RM		= rm -f
 #Includes
 INC			= -I ./include/
 
+#Libraries
+LIBS		= -lyaml-cpp
+
 #Source files
 SRC_DIR	= src/
 SRC 	= $(shell find $(SRC_DIR) -type f -iname "*.cpp" | sed 's|^src/||')
@@ -35,7 +38,7 @@ $(OBJ_DIR)%.o: $(SRC_DIR)%.cpp | $(OBJ_DIR)
 	@$(CC) $(CFLAGS) $(INC) -c $< -o $@ 
 
 $(NAME): $(OBJS)
-	@$(CC) $(CFLAGS) $(INC) -o $(NAME) $(OBJS)
+	@$(CC) $(CFLAGS) $(INC) -o $(NAME) $(OBJS) $(LIBS)
 	@printf "$(GREEN)$(NAME): OK!$(RESET)\n"
 
 clean:

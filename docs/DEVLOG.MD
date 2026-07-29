@@ -1096,3 +1096,26 @@ cambio si el config esta bien pero un programa falla al ejecutarse, eso no es co
 del parser: los demas arrancan igual y ese acaba en FATAL, que ya lo hace el manager.
 Supervisor no asume dependencias entre programas, cada uno es independiente, asi que
 un fallo de uno no tumba a los otros.
+
+### 2026-07-28
+
+Parser real terminado. La libreria hace el parseo crudo y yo me
+encargo de validar y traducir a ProgramConfig. Solo cmd es obligatorio; el resto,
+si no esta en el YAML, se queda con el default del struct. El umask lo leo como
+texto y lo convierto en base 8, porque leyendolo como int un 022 se interpretaria
+como el decimal 22 y no como el octal. Los exitcodes admiten las dos formas del
+ejemplo del subject, lista o escalar. Y valido nombres duplicados, que era el
+problema que me encontre con los dos sleeper.
+
+numprocs lo expande el parser: numprocs 3 genera worker_0, worker_1 y worker_2; con
+1 el nombre se queda tal cual. No va al struct, cada ProgramConfig es una instancia.
+
+Probado con un config real y funciona todo, incluidos los campos que nunca habia
+podido ejercitar con los stubs: los tres worker arrancan con pid distinto, el env
+llega al hijo (STARTED_BY y ANSWER salen en su stdout), y el autostart false se
+respeta. La politica de error tambien va: con un programa sin cmd sale
+program 'broken': missing 'cmd' y no arranca.
+
+
+
+IMPORTANTE: hay que instalar libyaml-cpp-dev en la maquina

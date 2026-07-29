@@ -1,0 +1,60 @@
+programs:
+
+  worker:
+    cmd: "/bin/sleep 500"
+    numprocs: 3
+    autostart: true
+    autorestart: unexpected
+    starttime: 2
+    stdout: ./logs/worker.stdout
+    stderr: ./logs/worker.stderr
+
+  oneshot_never:
+    cmd: "echo hello-from-taskmaster"
+    autostart: true
+    autorestart: never
+    starttime: 0
+    stdout: ./logs/oneshot_never.stdout
+    stderr: ./logs/oneshot_never.stderr
+
+  failer_always:
+    cmd: "/bin/false"
+    autostart: false
+    autorestart: always
+    startretries: 3
+    starttime: 2
+    stdout: ./logs/failer_always.stdout
+    stderr: ./logs/failer_always.stderr
+
+  sleeper:
+    cmd: "/bin/sleep 1000000"
+    autostart: true
+    autorestart: unexpected
+    starttime: 2
+    stopsignal: TERM
+    stoptime: 5
+    stdout: ./logs/sleeper.stdout
+    stderr: ./logs/sleeper.stderr
+
+  stubborn_never:
+    cmd: "./test/stubborn.sh"
+    autostart: true
+    autorestart: never
+    starttime: 2
+    stopsignal: TERM
+    stoptime: 3
+    stdout: ./logs/stubborn_never.stdout
+    stderr: ./logs/stubborn_never.stderr
+
+  envtest:
+    cmd: "/bin/sh -c env"
+    autostart: true
+    autorestart: never
+    starttime: 0
+    workingdir: /tmp
+    umask: 022
+    env:
+      STARTED_BY: taskmaster
+      ANSWER: "42"
+    stdout: ./logs/envtest.stdout
+    stderr: ./logs/envtest.stderr
