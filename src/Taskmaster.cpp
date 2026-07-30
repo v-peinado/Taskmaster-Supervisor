@@ -88,7 +88,13 @@ void Taskmaster::handleSignal() {
     }
     else if (sig == SIGHUP) {
         m_logger.log(Logger::LogLevel::Info, "SIGHUP received, reloading config");
-        m_proccess_manager.reloadManager(m_parser.loadProgramsConf());
+        try {
+            m_proccess_manager.reloadManager(m_parser.loadProgramsConf());
+        }
+        catch (const std::exception& e) {
+            m_logger.log(Logger::LogLevel::Error,
+                std::string("reload failed, keeping current config: ") + e.what());
+        }
     }
 }
 

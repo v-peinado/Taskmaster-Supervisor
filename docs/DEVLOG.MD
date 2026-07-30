@@ -1199,3 +1199,40 @@ kill -HUP 12345
 [30/07/2026-20:59:41] [ INFO ] - Application: reload: would remove stubborn_never
 [30/07/2026-20:59:41] [ INFO ] - Application: reload: would remove envtest
 [30/07/2026-20:59:41] [ INFO ] - Application: reload: would add newcomer
+
+
+### 2026-07-30
+
+Antes de seguir resolvemos un problema que detectamos, si la configuracion esta mal y da fallo
+salta la excepcion y el programa se cierra.
+No es de recibo esta situacion, si falla porque la nueva conf tiene un error nodebe acarse el propgrama,
+debe seguir con la configuracion anterior.
+No me gusta poner bloques de try catch despierdigados por el codigo, simplemente recibe una excepcion, es cierto que
+puedo diferenciarlo mediante el mensaje, suponiendo que nunca cambiar(mala idea), pero ya se habra salido de run.
+
+```
+    else if (sig == SIGHUP) {
+        m_logger.log(Logger::LogLevel::Info, "SIGHUP received, reloading config");
+        try {
+            m_proccess_manager.reloadManager(m_parser.loadProgramsConf());
+        }
+        catch (const std::exception& e) {
+            m_logger.log(Logger::LogLevel::Error,
+                std::string("reload failed, keeping current config: ") + e.what());
+        }
+    }
+
+```
+
+Antes de cambiar si pongo una conf mal a proposito:
+
+  sleeper:
+    cmd: "/bin/sleep 1000000"
+    autorestart: siempre
+
+Salta este erro y sale del programa, tanto en log como en consola:
+
+[30/07/2026-21:43:10] [ ERROR ] - Application: program 'sleeper': autorestart must be always, never or unexpected
+
+
+Ahora con este cambio no se sale del programa y se loguea la excepcion.
