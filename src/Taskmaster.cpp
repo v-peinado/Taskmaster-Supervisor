@@ -25,7 +25,6 @@ Taskmaster::Taskmaster(const Config& cfg, Logger& logger)
 void Taskmaster::init() {
     m_logger.log(Logger::LogLevel::Info, "Taskmaster is running");
     m_logger.log(Logger::LogLevel::Info, "The config file is " + m_config_file);
-    m_logger.log(Logger::LogLevel::Warning, "The conf file is not validated");
 
     std::vector<ProgramConfig> programs_to_exec = m_parser.loadProgramsConf();
     m_proccess_manager.startManager(programs_to_exec);
@@ -88,7 +87,8 @@ void Taskmaster::handleSignal() {
         m_shutting_down = true;
     }
     else if (sig == SIGHUP) {
-        m_logger.log(Logger::LogLevel::Info, "SIGHUP received, reload pending");
+        m_logger.log(Logger::LogLevel::Info, "SIGHUP received, reloading config");
+        m_proccess_manager.reloadManager(m_parser.loadProgramsConf());
     }
 }
 

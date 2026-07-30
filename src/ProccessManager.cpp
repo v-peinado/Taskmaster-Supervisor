@@ -477,3 +477,57 @@ int ProccessManager::signalFromName(const std::string& name) const {
     if (name == "KILL") return SIGKILL;
     return SIGTERM;
 }
+
+
+// Reloal
+
+void ProccessManager::reloadManager(const std::vector<ProgramConfig>& configs) {
+    // programs that are running: removed or modified?
+    for (auto& program : m_programs) {
+        const ProgramConfig& current = program.getProgramConfig();
+        const ProgramConfig* incoming = findConfig(configs, current.name);
+
+        if (!incoming)
+            m_logger.log(Logger::LogLevel::Info, "reload: would remove " + current.name);
+        else if (!(*incoming == current))
+            m_logger.log(Logger::LogLevel::Info, "reload: would restart " + current.name);
+        else
+            m_logger.log(Logger::LogLevel::Info, "reload: unchanged " + current.name);
+    }
+
+    // programs in the new config that are not running
+    for (const auto& cfg : configs) {
+        if (!findByName(cfg.name))
+            m_logger.log(Logger::LogLevel::Info, "reload: would add " + cfg.name);
+    }
+}
+
+const ProgramConfig* ProccessManager::findConfig(const std::vector<ProgramConfig>& configs,
+                                                 const std::string& name) const {
+    for (const auto& cfg : configs)
+        if (cfg.name == name)
+            return &cfg;
+    return nullptr;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

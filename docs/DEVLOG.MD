@@ -1168,3 +1168,34 @@ NOTA IMPORTANTE: en este proyecto he intentado llevar a rajatabla el concepto de
 gestion adecuada de los recursos, aun asi, igual que refactorizamos y repasamos codigo, es necesario que una
 vez acabado el hotreload, se haga un repaso general del flujo para ver si se respeta, y usar recursos sintacticos
 del lenguaje para asefgurarlo.
+
+### 2026-07-30
+
+Primer paso del hot reload, solo detectamos si hay cambios despues de un sighup, que para 
+probar mandamos manualmente, y loguea si hay cambios o no.
+
+Para detectar recorremos los programas que estan corriendo, si su nombre no esta en el nuevo
+config, sobra, si esta pero cambia la config, hay que reiniciarlo con su nueva conf.
+
+Despues recorremos sobre el nuevo vector de configuraciones para ver los programas que son nuevos y no estan corriendo.
+
+Todavia no implementamos el comando de reload, por lo que mandamos manualmente sighup al programa, la senal elegida
+para disparar el reload, es la senal que se manda a los programas que se quedan sin terminal, en un daemon es una senal
+que no tiene sentido, la capturamos y la usamos para disparar el reload, a partir de ahi se loguea todo lo que cambia.
+
+```
+ps aux | grep taskmaster
+kill -HUP 12345
+
+```
+
+[30/07/2026-20:59:41] [ INFO ] - Application: SIGHUP received, reloading config
+[30/07/2026-20:59:41] [ INFO ] - Application: reload: unchanged worker_0
+[30/07/2026-20:59:41] [ INFO ] - Application: reload: unchanged worker_1
+[30/07/2026-20:59:41] [ INFO ] - Application: reload: would remove worker_2
+[30/07/2026-20:59:41] [ INFO ] - Application: reload: would remove oneshot_never
+[30/07/2026-20:59:41] [ INFO ] - Application: reload: would remove failer_always
+[30/07/2026-20:59:41] [ INFO ] - Application: reload: would restart sleeper
+[30/07/2026-20:59:41] [ INFO ] - Application: reload: would remove stubborn_never
+[30/07/2026-20:59:41] [ INFO ] - Application: reload: would remove envtest
+[30/07/2026-20:59:41] [ INFO ] - Application: reload: would add newcomer

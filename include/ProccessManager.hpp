@@ -24,6 +24,7 @@ class ProccessManager {
         void startManager(const std::vector<ProgramConfig>& cfg);
         bool hasLivePrograms() const;
         void stopAllPrograms();
+        void reloadManager(const std::vector<ProgramConfig>& configs);
 
         // Commands
         std::string startProccess(const std::string& name);
@@ -70,6 +71,7 @@ class ProccessManager {
         Program* findByName(const std::string& name);
         Program* findByPidFd(int fd);
         Program* findByReadFd(int fd);
+        const ProgramConfig* findConfig(const std::vector<ProgramConfig>& configs, const std::string& name) const;
 
         // Status and translation helpers
         std::string_view stateToString(Program::State state) const;
