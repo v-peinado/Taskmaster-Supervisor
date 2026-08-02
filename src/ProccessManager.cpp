@@ -497,8 +497,14 @@ void ProccessManager::reloadManager(const std::vector<ProgramConfig>& configs) {
 
     // programs in the new config that are not running
     for (const auto& cfg : configs) {
-        if (!findByName(cfg.name))
-            m_logger.log(Logger::LogLevel::Info, "reload: would add " + cfg.name);
+        if (findByName(cfg.name))
+            continue;
+
+        m_programs.push_back(Program(cfg));
+        m_logger.log(Logger::LogLevel::Info, "reload: added " + cfg.name);
+
+        if (cfg.autostart)
+            launch(m_programs.back());
     }
 }
 

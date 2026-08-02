@@ -1236,3 +1236,26 @@ Salta este erro y sale del programa, tanto en log como en consola:
 
 
 Ahora con este cambio no se sale del programa y se loguea la excepcion.
+
+
+### 2026-07-29
+
+Los programas nuevos ya se añaden de verdad. El segundo
+bucle del reloadManager, en vez de solo loguear, crea el Program y lo lanza si tiene autostart.
+
+Probado añadiendo un programa al config y mandando SIGHUP: aparece con su pid nuevo y los que
+ya estaban conservan los suyos, que es lo que importa del hot reload.
+
+
+taskmaster> status
+sleeper    RUNNING    pid 1108616
+worker_0    RUNNING    pid 1108617
+worker_1    RUNNING    pid 1108619
+newcomer    RUNNING    pid 1108620
+
+taskmaster> status
+sleeper    RUNNING    pid 1108616
+worker_0    RUNNING    pid 1108617
+worker_1    RUNNING    pid 1108619
+newcomer    RUNNING    pid 1108620
+newcomer2    RUNNING    pid 1109128
