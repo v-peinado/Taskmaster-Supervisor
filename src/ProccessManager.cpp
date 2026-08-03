@@ -219,6 +219,7 @@ void ProccessManager::handleEvent(const EventLoop::Event& ev) {
 void ProccessManager::checkTimers() {
     confirmStarted();
     checkStopTimeouts();
+    removeMarkedPrograms();
 }
 
 // Monitoring
@@ -246,6 +247,30 @@ void ProccessManager::checkStopTimeouts() {
     }
 }
 
+void ProccessManager::removeMarkedPrograms() {
+    // We cannot erase from m_programs while iterating it: erasing invalidates the
+    // iterators the range-based for uses internally. Instead we build a temporary
+    // vector with the survivors and swap it in at the end. Program is move-only,
+    // so the survivors are moved, not copied.
+    std::vector<Program> temp;
+
+    for (auto& program : m_programs) {
+        Program::State s = program.getState();
+        bool alive = (s == Program::State::Running
+                   || s == Program::State::Starting
+                   || s == Program::State::Stopping);
+
+        if (program.isPendingRemoval() && !alive) {
+            m_logger.log(Logger::LogLevel::Info,
+                "reload: removed " + program.getProgramConfig().name);
+            continue;
+        }
+
+        temp.push_back(std::move(program));
+    }
+
+    m_programs = std::move(temp);
+}
 // Process death
 
 void ProccessManager::handleDeath(Program& program) {
@@ -487,8 +512,17 @@ void ProccessManager::reloadManager(const std::vector<ProgramConfig>& configs) {
         const ProgramConfig& current = program.getProgramConfig();
         const ProgramConfig* incoming = findConfig(configs, current.name);
 
-        if (!incoming)
-            m_logger.log(Logger::LogLevel::Info, "reload: would remove " + current.name);
+        if (!incoming) {
+            m_logger.log(Logger::LogLevel::Info, "reload: removing " + current.name);
+            program.setPendingRemoval(true);
+
+            Program::State s = program.getState();
+            if (s == Program::State::Running || s == Program::State::Starting) {
+                int sig = signalFromName(current.stopsignal);
+                program.stopping();
+                kill(program.getPid(), sig);
+            }
+        }
         else if (!(*incoming == current))
             m_logger.log(Logger::LogLevel::Info, "reload: would restart " + current.name);
         else

@@ -1150,7 +1150,7 @@ bonus cliente/servidor va a redibujar fronteras igualmente.
 
 ### 2026-07-29
 
-Añado el operator== a "ProgramConfig" para poder comparar configuraciones en el reload, que
+Añado el operator== a ProgramConfig para poder comparar configuraciones en el reload, que
 necesito saber si un programa ha cambiado. Lo pongo con = default, asi el compilador genera la
 comparacion campo por campo y no tengo que escribirla ni acordarme de actualizarla cada vez que
 añada un campo al struct.
@@ -1212,13 +1212,13 @@ puedo diferenciarlo mediante el mensaje, suponiendo que nunca cambiar(mala idea)
 
 ```
     else if (sig == SIGHUP) {
-        m_logger.log(Logger::LogLevel::Info, "SIGHUP received, reloading config");
+        m_logger.log(Logger::LogLevel::Info, SIGHUP received, reloading config);
         try {
             m_proccess_manager.reloadManager(m_parser.loadProgramsConf());
         }
         catch (const std::exception& e) {
             m_logger.log(Logger::LogLevel::Error,
-                std::string("reload failed, keeping current config: ") + e.what());
+                std::string(reload failed, keeping current config: ) + e.what());
         }
     }
 
@@ -1227,7 +1227,7 @@ puedo diferenciarlo mediante el mensaje, suponiendo que nunca cambiar(mala idea)
 Antes de cambiar si pongo una conf mal a proposito:
 
   sleeper:
-    cmd: "/bin/sleep 1000000"
+    cmd: /bin/sleep 1000000
     autorestart: siempre
 
 Salta este erro y sale del programa, tanto en log como en consola:
@@ -1259,3 +1259,28 @@ worker_0    RUNNING    pid 1108617
 worker_1    RUNNING    pid 1108619
 newcomer    RUNNING    pid 1108620
 newcomer2    RUNNING    pid 1109128
+
+
+### 2026-07-29
+
+Reload completo, los programas nuevos se añaden y los que ya no estan en el
+config se quitan. Como parar es asincrono, marco el programa con un flag pending_removal, le
+mando su señal, y un removeMarkedPrograms en el checkTimers lo saca del vector cuando ya ha
+muerto de verdad.
+
+Probado al quitar un programa del config y mandar SIGHUP desaparece, y los demas conservan
+sus pids.
+
+./taskmaster conf.yml
+taskmaster> status
+sleeper    RUNNING    pid 1197610
+worker_0    RUNNING    pid 1197611
+worker_1    RUNNING    pid 1197612
+newcomer    RUNNING    pid 1197613
+newcomer2    RUNNING    pid 1197614
+
+taskmaster> status
+sleeper    RUNNING    pid 1197610
+worker_0    RUNNING    pid 1197611
+worker_1    RUNNING    pid 1197612
+newcomer    RUNNING    pid 1197613

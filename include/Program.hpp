@@ -31,7 +31,7 @@ class Program {
         Program(Program&&) = default;
         Program& operator=(Program&&) = default;
 
-        // State transitions
+        // State transitions and pure setters
         void started(pid_t pid, ProcessIO io);
         void setRunning();
         void exited();
@@ -41,6 +41,7 @@ class Program {
         void incRestartNum();
         void resetRestarts();
         void setPendingRestart(bool value);
+        void setPendingRemoval(bool value);
 
         // Getters
         const ProgramConfig& getProgramConfig() const;
@@ -53,6 +54,7 @@ class Program {
         int   getStderrLogFd() const;
         int   getPidFd() const;
         bool  isPendingRestart() const;
+        bool  isPendingRemoval() const;
 
         // Timing windows
         bool startWindowPassed() const;
@@ -73,4 +75,5 @@ class Program {
         std::chrono::steady_clock::time_point m_start_time;
         std::chrono::steady_clock::time_point m_stop_time;
         bool                                  m_pending_restart;
+        bool                                  m_pending_removal;
 };

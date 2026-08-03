@@ -57,6 +57,7 @@ class ProccessManager {
         // Monitoring
         void confirmStarted();
         void checkStopTimeouts();
+        void removeMarkedPrograms();
 
         // Process death
         void handleDeath(Program& program);

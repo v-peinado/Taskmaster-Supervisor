@@ -13,6 +13,7 @@ Program::Program(const ProgramConfig& cfg)
     , m_start_time(std::chrono::steady_clock::now())
     , m_stop_time(std::chrono::steady_clock::now())
     , m_pending_restart(false)
+    , m_pending_removal(false)
     {}
 // State transitions
 
@@ -56,6 +57,10 @@ void Program::setPendingRestart(bool value) {
     m_pending_restart = value;
 }
 
+void Program::setPendingRemoval(bool value) {
+    m_pending_removal = value;
+}
+
 // Getters
 
 const ProgramConfig& Program::getProgramConfig() const { return m_config; }
@@ -77,6 +82,8 @@ int Program::getStderrLogFd() const { return m_io.stderr_log.getFd(); }
 int Program::getPidFd() const { return m_io.pidfd.getFd(); }
 
 bool Program::isPendingRestart() const { return m_pending_restart; }
+
+bool Program::isPendingRemoval() const { return m_pending_removal; }
 
 // Timing windows
 
