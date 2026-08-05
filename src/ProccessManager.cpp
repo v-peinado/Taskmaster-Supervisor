@@ -319,6 +319,7 @@ void ProccessManager::handleStoppedDeath(Program& program) {
 
     if (program.isPendingRestart()) {
         program.setPendingRestart(false);
+        program.applyPendingConfig();
         launch(program);
     }
 }
@@ -523,10 +524,28 @@ void ProccessManager::reloadManager(const std::vector<ProgramConfig>& configs) {
                 kill(program.getPid(), sig);
             }
         }
-        else if (!(*incoming == current))
-            m_logger.log(Logger::LogLevel::Info, "reload: would restart " + current.name);
-        else
+        else if (!(*incoming == current)) {
+            m_logger.log(Logger::LogLevel::Info, "reload: restarting " + current.name);
+            program.setPendingConfig(*incoming);
+
+            Program::State s = program.getState();
+            if (s == Program::State::Running || s == Program::State::Starting) {
+                // stop it with its CURRENT signal; the new config is applied on death
+                int sig = signalFromName(current.stopsignal);
+                program.setPendingRestart(true);
+                program.stopping();
+                kill(program.getPid(), sig);
+            }
+            else {
+                // not running: the new config takes effect right away
+                program.applyPendingConfig();
+                if (program.getProgramConfig().autostart)
+                    launch(program);
+            }
+        }
+        else {
             m_logger.log(Logger::LogLevel::Info, "reload: unchanged " + current.name);
+        }
     }
 
     // programs in the new config that are not running

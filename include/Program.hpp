@@ -42,6 +42,8 @@ class Program {
         void resetRestarts();
         void setPendingRestart(bool value);
         void setPendingRemoval(bool value);
+        void setPendingConfig(const ProgramConfig& cfg);
+        void applyPendingConfig();
 
         // Getters
         const ProgramConfig& getProgramConfig() const;
@@ -55,6 +57,7 @@ class Program {
         int   getPidFd() const;
         bool  isPendingRestart() const;
         bool  isPendingRemoval() const;
+        bool  hasPendingConfig() const;
 
         // Timing windows
         bool startWindowPassed() const;
@@ -76,4 +79,6 @@ class Program {
         std::chrono::steady_clock::time_point m_stop_time;
         bool                                  m_pending_restart;
         bool                                  m_pending_removal;
+        ProgramConfig                         m_pending_config;
+        bool                                  m_has_pending_config;
 };

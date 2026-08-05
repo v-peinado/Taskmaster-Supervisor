@@ -1284,3 +1284,20 @@ sleeper    RUNNING    pid 1197610
 worker_0    RUNNING    pid 1197611
 worker_1    RUNNING    pid 1197612
 newcomer    RUNNING    pid 1197613
+
+### 2026-07-29
+
+Reload mejorado los programas modificados ya se reinician con la config nueva. Se guarda la
+config pendiente en el Program y la aplico en el handleStoppedDeath, justo antes de
+relanzar, cuando el proceso viejo ya ha muerto. Con esto el hot reload esta completo.
+El resto de programas son respetados, seguimos usando un sighup manual desde el sistema,
+de hecho se avisa si intentas usar reload, lo voy a implementar con la shell.
+
+[06/08/2026-00:25:33] [ INFO ] - Application: SIGHUP received, reloading config
+[06/08/2026-00:25:33] [ INFO ] - Application: reload: unchanged sleeper
+[06/08/2026-00:25:33] [ INFO ] - Application: reload: unchanged worker_0
+[06/08/2026-00:25:33] [ INFO ] - Application: reload: unchanged worker_1
+[06/08/2026-00:25:33] [ INFO ] - Application: reload: restarting newcomer
+[06/08/2026-00:25:33] [ INFO ] - Application: newcomer killed by signal 15
+[06/08/2026-00:25:33] [ INFO ] - Application: Started newcomer (pid 1351275)
+[06/08/2026-00:25:35] [ INFO ] - Application: newcomer running

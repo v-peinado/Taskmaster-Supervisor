@@ -14,6 +14,7 @@ Program::Program(const ProgramConfig& cfg)
     , m_stop_time(std::chrono::steady_clock::now())
     , m_pending_restart(false)
     , m_pending_removal(false)
+    , m_has_pending_config(false)
     {}
 // State transitions
 
@@ -61,6 +62,19 @@ void Program::setPendingRemoval(bool value) {
     m_pending_removal = value;
 }
 
+void Program::setPendingConfig(const ProgramConfig& cfg) {
+    m_pending_config     = cfg;
+    m_has_pending_config = true;
+}
+
+void Program::applyPendingConfig() {
+    if (!m_has_pending_config)
+        return;
+
+    m_config             = m_pending_config;
+    m_has_pending_config = false;
+}
+
 // Getters
 
 const ProgramConfig& Program::getProgramConfig() const { return m_config; }
@@ -84,6 +98,8 @@ int Program::getPidFd() const { return m_io.pidfd.getFd(); }
 bool Program::isPendingRestart() const { return m_pending_restart; }
 
 bool Program::isPendingRemoval() const { return m_pending_removal; }
+
+bool Program::hasPendingConfig() const { return m_has_pending_config; }
 
 // Timing windows
 
