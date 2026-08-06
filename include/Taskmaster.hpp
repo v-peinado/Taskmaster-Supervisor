@@ -48,6 +48,7 @@ class Taskmaster {
         // Event handlers
         void handleSignal();
         void handleCommand();
+        void doReload();
 
         // Command parsing
         enum class CommandType {

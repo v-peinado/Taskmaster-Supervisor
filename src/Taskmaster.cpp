@@ -88,13 +88,7 @@ void Taskmaster::handleSignal() {
     }
     else if (sig == SIGHUP) {
         m_logger.log(Logger::LogLevel::Info, "SIGHUP received, reloading config");
-        try {
-            m_proccess_manager.reloadManager(m_parser.loadProgramsConf());
-        }
-        catch (const std::exception& e) {
-            m_logger.log(Logger::LogLevel::Error,
-                std::string("reload failed, keeping current config: ") + e.what());
-        }
+        doReload();
     }
 }
 
@@ -135,7 +129,9 @@ void Taskmaster::handleCommand() {
                 m_shell.showResponse(m_proccess_manager.restartProccess(cmd->args[0]));
             break;
         case CommandType::Reload:
-            m_shell.showResponse("reload not implemented yet");
+            m_logger.log(Logger::LogLevel::Info, "reload command received");
+            doReload();
+            m_shell.showResponse("config reloaded");
             break;
         case CommandType::Help:
             m_shell.showResponse(
@@ -170,4 +166,14 @@ Taskmaster::CommandType Taskmaster::parseCommandType(const std::string& name) co
     if (name == "help")    return CommandType::Help;
     if (name == "quit")    return CommandType::Quit;
     return CommandType::Unknown;
+}
+
+void Taskmaster::doReload() {
+    try {
+        m_proccess_manager.reloadManager(m_parser.loadProgramsConf());
+    }
+    catch (const std::exception& e) {
+        m_logger.log(Logger::LogLevel::Error,
+            std::string("reload failed, keeping current config: ") + e.what());
+    }
 }

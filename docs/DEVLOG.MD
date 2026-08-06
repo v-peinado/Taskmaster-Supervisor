@@ -1285,7 +1285,7 @@ worker_0    RUNNING    pid 1197611
 worker_1    RUNNING    pid 1197612
 newcomer    RUNNING    pid 1197613
 
-### 2026-07-29
+### 2026-03-08
 
 Reload mejorado los programas modificados ya se reinician con la config nueva. Se guarda la
 config pendiente en el Program y la aplico en el handleStoppedDeath, justo antes de
@@ -1301,3 +1301,12 @@ de hecho se avisa si intentas usar reload, lo voy a implementar con la shell.
 [06/08/2026-00:25:33] [ INFO ] - Application: newcomer killed by signal 15
 [06/08/2026-00:25:33] [ INFO ] - Application: Started newcomer (pid 1351275)
 [06/08/2026-00:25:35] [ INFO ] - Application: newcomer running
+
+taskmaster> reload
+reload not implemented yet
+
+### 2026-08-06
+
+Conectado el comando reload de la shell, que hasta ahora solo respondia not implemented.
+Se crea doReload que llama tanto el SIGHUP como el comando, para no duplicar el
+try/catch que protege al daemon de un config invalido.
