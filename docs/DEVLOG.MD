@@ -1371,6 +1371,16 @@ Yo no lo he considerado un error del programa, es un error del archivo de config
 que es instantaneo y que cumplira su ciclo de vida en la espera, taskmaster no juzga la logica de la configuracion,
 solo la ejecuta y da el resultado.
 
+programs:
+
+  oneshot:
+    cmd: "/bin/echo hello-from-taskmaster"
+    autostart: true
+    autorestart: never
+    starttime: 0
+    stdout: ./logs/oneshot.stdout
+    stderr: ./logs/oneshot.stderr
+
 /taskmaster test/02_never.yml 
 taskmaster> status
 oneshot    EXITED
@@ -1384,5 +1394,40 @@ Vemos que esta exited, comprobamos en logs.
 
 Y vemos su salida en el archivo logs/oneshot.stdout.
 
+- Test 03: un programa que muere antes de cumplir su starttime.
+
+El mismo programa de antes pero con un starttime de 5 segundos. Como muere en milisegundos, no
+llega a cumplir el tiempo que se le pide, asi que taskmaster lo cuenta como que no ha
+conseguido arrancar y lo reintenta hasta agotar los startretries, dejandolo en FATAL. Y eso
+aunque salga con codigo 0: lo que se incumple no es el codigo de salida, es el compromiso de
+aguantar vivo esos 5 segundos.
+
+autorestart: never no bloquea los reintentos de arranque. Son
+dos cosas distintas, startretries dice cuantas veces intento PONERLO EN MARCHA, y autorestart
+que hago cuando uno que YA ESTABA FUNCIONANDO se muere. Never significa si se caer cuando estaba funcionando
+estable, no lo vuelves a levantar.
+
+  tooquick:
+    cmd: "/bin/echo hello-from-taskmaster"
+    autostart: true
+    autorestart: never
+    startretries: 3
+    starttime: 5
+    stdout: ./logs/tooquick.stdout
+    stderr: ./logs/tooquick.stderr
 
 
+./taskmaster test/03_starttime_fail.yml 
+taskmaster> status
+tooquick    FATAL
+
+[08/08/2026-21:57:59] [ INFO ] - Application: The config file is test/03_starttime_fail.yml
+[08/08/2026-21:57:59] [ INFO ] - Application: Started tooquick (pid 20571)
+[08/08/2026-21:57:59] [ INFO ] - Application: tooquick exited, code 0
+[08/08/2026-21:57:59] [ WARNING ] - Application: tooquick failed to start, retrying
+[08/08/2026-21:57:59] [ INFO ] - Application: Started tooquick (pid 20572)
+[08/08/2026-21:57:59] [ INFO ] - Application: tooquick exited, code 0
+[08/08/2026-21:57:59] [ WARNING ] - Application: tooquick failed to start, retrying
+[08/08/2026-21:57:59] [ INFO ] - Application: Started tooquick (pid 20573)
+[08/08/2026-21:57:59] [ INFO ] - Application: tooquick exited, code 0
+[08/08/2026-21:57:59] [ ERROR ] - Application: tooquick failed to start, giving up
