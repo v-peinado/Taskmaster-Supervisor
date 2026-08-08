@@ -1466,3 +1466,40 @@ sleeper    STOPPED
 [08/08/2026-23:59:47] [ INFO ] - Application: Started sleeper (pid 23967)
 [08/08/2026-23:59:49] [ INFO ] - Application: sleeper running
 [09/08/2026-00:04:09] [ INFO ] - Application: sleeper killed by signal 15
+
+- Test 05: parar un programa que ignora la señal.
+
+En este caso, probaremos el stop con un programa que ignora SIGTERM(15),
+cuando taskmaster vea que tarda mucho, se debera rematar con SIGKILL.
+
+programs:
+
+  stubborn:
+    cmd: "./test/stubborn.sh"
+    autostart: true
+    autorestart: never
+    starttime: 2
+    stopsignal: TERM
+    stoptime: 3
+    stdout: ./logs/stubborn.stdout
+    stderr: ./logs/stubborn.stderr
+
+Se llamara a un script en bash que simplemente consiste en un bucle infinito
+pero que captura sigterm y no hace nada.
+Mira el funcionamiento parece normal pero en los logs se ve en flujo real.
+
+./taskmaster test/05_stop_stubborn.yml
+taskmaster> status
+stubborn    RUNNING    pid 25011
+
+taskmaster> stop stubborn
+stubborn stopping
+taskmaster> status
+stubborn    STOPPED
+
+[09/08/2026-00:16:42] [ INFO ] - Application: Taskmaster is running
+[09/08/2026-00:16:42] [ INFO ] - Application: The config file is test/05_stop_stubborn.yml
+[09/08/2026-00:16:42] [ INFO ] - Application: Started stubborn (pid 25011)
+[09/08/2026-00:16:44] [ INFO ] - Application: stubborn running
+[09/08/2026-00:19:40] [ WARNING ] - Application: stubborn did not stop in time, sending SIGKILL
+[09/08/2026-00:19:40] [ INFO ] - Application: stubborn killed by signal 9
