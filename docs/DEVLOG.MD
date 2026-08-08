@@ -1431,3 +1431,38 @@ tooquick    FATAL
 [08/08/2026-21:57:59] [ INFO ] - Application: Started tooquick (pid 20573)
 [08/08/2026-21:57:59] [ INFO ] - Application: tooquick exited, code 0
 [08/08/2026-21:57:59] [ ERROR ] - Application: tooquick failed to start, giving up
+
+
+- Test 04: parada limpia con el comando stop.
+
+Se para un programa a mano y se comprueba que se queda parado. 
+Parece una tonteria, pero lo importante es distinguir entre un programa que se para por alguna razon y uno parado
+por mi, aunque tenga autorestart: unexpected y una senal podria considerarse inexperado,
+discernimos entre los dos casos.
+
+programs:
+
+  sleeper:
+    cmd: "/bin/sleep 1000000"
+    autostart: true
+    autorestart: unexpected
+    starttime: 2
+    stopsignal: TERM
+    stoptime: 5
+    stdout: ./logs/sleeper.stdout
+    stderr: ./logs/sleeper.stderr
+
+./taskmaster test/04_stop.yml 
+taskmaster> status
+sleeper    RUNNING    pid 23967
+
+taskmaster> stop sleeper
+sleeper stopping
+taskmaster> status
+sleeper    STOPPED
+
+[08/08/2026-23:59:47] [ INFO ] - Application: Taskmaster is running
+[08/08/2026-23:59:47] [ INFO ] - Application: The config file is test/04_stop.yml
+[08/08/2026-23:59:47] [ INFO ] - Application: Started sleeper (pid 23967)
+[08/08/2026-23:59:49] [ INFO ] - Application: sleeper running
+[09/08/2026-00:04:09] [ INFO ] - Application: sleeper killed by signal 15
