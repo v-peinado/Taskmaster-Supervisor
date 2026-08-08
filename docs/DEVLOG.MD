@@ -1354,3 +1354,35 @@ taskmaster>
 [08/08/2026-18:40:20] [ INFO ] - Application: The config file is test/01_autostart.yml
 [08/08/2026-18:40:20] [ INFO ] - Application: Started sleeper (pid 11882)
 [08/08/2026-18:40:25] [ INFO ] - Application: sleeper running
+
+
+- Test 02: politica never.
+
+Un programa que hace su trabajo y termina solo. Se comprueba que taskmaster respeta el never y
+no lo vuelve a levantar: sale con codigo 0 y se queda como EXITED, sin ningun relanzado detras.
+Ademas sirve para ver que la salida del programa se guarda en su fichero.
+
+Detalle importante, al ser un programa que se ejecuta, y acaba, si le damos startime de mas de 0,
+figurarta como error, por lo que aunque segun configuracion no deberia volver a ejecutar,
+esto se consideraria fallo de arranque, y se volveria a intentar, hasta que agote las oportunidades
+que se le ha dado en startretries, saliendo como fallo fatal al final, lo que da pie al siguiente test 03.
+
+Yo no lo he considerado un error del programa, es un error del archivo de configuracion, esperar a un proceso
+que es instantaneo y que cumplira su ciclo de vida en la espera, taskmaster no juzga la logica de la configuracion,
+solo la ejecuta y da el resultado.
+
+/taskmaster test/02_never.yml 
+taskmaster> status
+oneshot    EXITED
+
+Vemos que esta exited, comprobamos en logs.
+
+[08/08/2026-21:04:35] [ INFO ] - Application: The config file is test/02_never.yml
+[08/08/2026-21:04:35] [ INFO ] - Application: Started oneshot (pid 19250)
+[08/08/2026-21:04:35] [ INFO ] - Application: oneshot running
+[08/08/2026-21:04:35] [ INFO ] - Application: oneshot exited, code 0
+
+Y vemos su salida en el archivo logs/oneshot.stdout.
+
+
+
