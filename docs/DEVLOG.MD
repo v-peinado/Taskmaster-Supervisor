@@ -1309,4 +1309,48 @@ reload not implemented yet
 
 Conectado el comando reload de la shell, que hasta ahora solo respondia not implemented.
 Se crea doReload que llama tanto el SIGHUP como el comando, para no duplicar el
-try/catch que protege al daemon de un config invalido.
+try/catch que protege al daemon de un config invalido..
+
+
+### 2026-08-08
+
+Vamos a empezar una buena bateria de pruebas, teniendo en cuenta diferentes programas caso.
+Cada test tendra su propia conf, guardada en la carpeta test, de momneto esta carpeta esta en gitignore.
+La mayoria de casos son casos comprobado y en los que ya existian test, algunos ayudaron a detectar
+bugs en tiempo de desarrollo, pero conseidero necesario hacer un repaso:
+
+La forma de ejecucion es ./taskmaster test/nombredetest.conf
+
+- Test 01: arranque automatico y starttime de 5 segundos.
+
+Al cargar un programa con autostart: true, se comnprueba que se arranca nada mas empezar(STARTING),
+y no se da por bueno hasta que pasan 5 segundos, que pasara a RUNNING.
+Esto nos protege del caso de un programa que muere mientras arranca, no se da por
+arrancado hasta que demuestra que aguanta.
+
+programs:
+
+  sleeper:
+    cmd: "/bin/sleep 1000000"
+    autostart: true
+    autorestart: unexpected
+    starttime: 5
+    stopsignal: TERM
+    stoptime: 5
+    stdout: ./logs/sleeper.stdout
+    stderr: ./logs/sleeper.stderr
+
+./taskmaster test/01_autostart.yml 
+taskmaster> status
+sleeper    STARTING    pid 11882
+
+taskmaster> status
+sleeper    RUNNING    pid 11882
+
+taskmaster> 
+
+
+[08/08/2026-18:40:20] [ INFO ] - Application: Taskmaster is running
+[08/08/2026-18:40:20] [ INFO ] - Application: The config file is test/01_autostart.yml
+[08/08/2026-18:40:20] [ INFO ] - Application: Started sleeper (pid 11882)
+[08/08/2026-18:40:25] [ INFO ] - Application: sleeper running
