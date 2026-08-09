@@ -1694,3 +1694,12 @@ se toma cada cambio en conf de un proceso como una orden de relanzar ese proceso
 
 Despues de solucionar el problema que he encontrado me surge la duda de como actuara con numprocs.
 
+- Arreglado el fallo del autostart en el reload.
+
+Al detectar un programa modificado lo marcaba para relanzar sin mirar la configuracion nueva, 
+ahora se hace program.setPendingRestart(incoming->autostart); en lugar de (true) asumiendo que 
+se debia relanzar sin tener en cuenta que estaba false.
+
+Y program.applyPendingConfig(); se saca del condicional, se aplica siempre se vaya a relanzar o no, 
+esta false y he cambiado otros cambios se hace en la consola start proceso y se comienza con
+los nuevos parametros

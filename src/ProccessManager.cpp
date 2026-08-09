@@ -316,10 +316,10 @@ void ProccessManager::handleDeath(Program& program) {
 
 void ProccessManager::handleStoppedDeath(Program& program) {
     program.stopped();
-
+    program.applyPendingConfig();
     if (program.isPendingRestart()) {
         program.setPendingRestart(false);
-        program.applyPendingConfig();
+
         launch(program);
     }
 }
@@ -532,7 +532,7 @@ void ProccessManager::reloadManager(const std::vector<ProgramConfig>& configs) {
             if (s == Program::State::Running || s == Program::State::Starting) {
                 // stop it with its CURRENT signal; the new config is applied on death
                 int sig = signalFromName(current.stopsignal);
-                program.setPendingRestart(true);
+                program.setPendingRestart(incoming->autostart);
                 program.stopping();
                 kill(program.getPid(), sig);
             }
