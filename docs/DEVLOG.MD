@@ -1534,3 +1534,30 @@ programs:
 [09/08/2026-01:04:11] [ INFO ] - Application: stubborn killed by signal 9
 [09/08/2026-01:04:11] [ INFO ] - Application: Started stubborn (pid 26599)
 [09/08/2026-01:04:13] [ INFO ] - Application: stubborn running
+
+- Test 07: un programa que se muere solo y vuelve a levantarse.
+
+Test sencillo, matamos a un proceso con autostart: true, desde fuera, morir por una senal externa
+cuenta como una muerte inesperada, se puede comparar con el test 4, los procesos mueren con la misma sernal SIGTERM
+la diferencia es quien la manda.
+
+programs:
+
+  sleeper:
+    cmd: "/bin/sleep 1000000"
+    autostart: true
+    autorestart: unexpected
+    starttime: 2
+    stopsignal: TERM
+    stoptime: 5
+    stdout: ./logs/sleeper.stdout
+    stderr: ./logs/sleeper.stderr
+
+./taskmaster test/07_autorestart.yml 
+taskmaster> status
+sleeper    RUNNING    pid 101096
+
+Mandamos kill -15 101096
+
+taskmaster> status
+sleeper    RUNNING    pid 101248   
