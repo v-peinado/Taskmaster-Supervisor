@@ -1687,3 +1687,10 @@ config reloaded
 taskmaster> status
 sleeper    RUNNING    pid 117108
 stubborn    RUNNING    pid 117135
+
+Hay muchas cosas que decir respecto a los cambios del hotreload, lo ideal seria evaluar que se cambia 
+para interrumpir el funcionamiento lo menos posible, pero por simplificacion(sopeso cambiarlo)
+se toma cada cambio en conf de un proceso como una orden de relanzar ese proceso.
+
+Despues de solucionar el problema que he encontrado me surge la duda de como actuara con numprocs.
+
