@@ -1580,3 +1580,19 @@ kill pid (manda sigterm por defecto)
 [09/08/2026-19:08:45] [ INFO ] - Application: Shutdown signal received, quitting
 [09/08/2026-19:08:45] [ INFO ] - Application: Sent TERM to sleeper
 [09/08/2026-19:08:45] [ INFO ] - Application: sleeper killed by signal 15
+
+- Test 09: añadir un programa con el reload.
+
+Para este test crearemos un conbfig con un solo programa, cambiaremos el archivo de configuracion anadiendo otro.
+Se ve simplemente con la salida de la consola, no hace falta ver los logs, el pid del programa que ya estaba lanzado
+NO CAMBIA, ES DECIR NO SE RELANZA.
+
+./taskmaster test/09_reload_add_before.yml 
+taskmaster> status
+sleeper    RUNNING    pid 102845
+
+taskmaster> reload
+config reloaded
+taskmaster> status
+sleeper    RUNNING    pid 102845
+newcomer    RUNNING    pid 102927
