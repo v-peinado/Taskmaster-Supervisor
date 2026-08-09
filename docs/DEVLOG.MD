@@ -1503,3 +1503,34 @@ stubborn    STOPPED
 [09/08/2026-00:16:44] [ INFO ] - Application: stubborn running
 [09/08/2026-00:19:40] [ WARNING ] - Application: stubborn did not stop in time, sending SIGKILL
 [09/08/2026-00:19:40] [ INFO ] - Application: stubborn killed by signal 9
+
+Este test da pie a otro, si se mata de esta manera un proceso de esta manera, es decir
+espera para morir defeinitivamente, esta vez en lugar de stop le pedimos un restart,
+
+- Test 06: reiniciar un programa con politica never.
+
+Igual que el anterior usamos un script que actua como procesoque ignora SIGTERM, en este caso
+comprobamos que hasta que el proceso anterior muere, no se levanta el nuevop, nunca conviven dos procesos.
+
+Ademas, vemos que autorestart: never, no afecta al reinicio manual.
+
+programs:
+
+  stubborn:
+    cmd: "./test/stubborn.sh"
+    autostart: true
+    autorestart: never
+    starttime: 2
+    stopsignal: TERM
+    stoptime: 3
+    stdout: ./logs/stubborn.stdout
+    stderr: ./logs/stubborn.stderr
+
+[09/08/2026-01:03:40] [ INFO ] - Application: Taskmaster is running
+[09/08/2026-01:03:40] [ INFO ] - Application: The config file is test/06_restart_never.yml
+[09/08/2026-01:03:40] [ INFO ] - Application: Started stubborn (pid 26372)
+[09/08/2026-01:03:42] [ INFO ] - Application: stubborn running
+[09/08/2026-01:04:11] [ WARNING ] - Application: stubborn did not stop in time, sending SIGKILL
+[09/08/2026-01:04:11] [ INFO ] - Application: stubborn killed by signal 9
+[09/08/2026-01:04:11] [ INFO ] - Application: Started stubborn (pid 26599)
+[09/08/2026-01:04:13] [ INFO ] - Application: stubborn running
