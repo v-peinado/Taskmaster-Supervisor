@@ -1561,3 +1561,22 @@ Mandamos kill -15 101096
 
 taskmaster> status
 sleeper    RUNNING    pid 101248   
+
+- Test 08: señales al propio taskmaster.
+
+Aqui comprobamos el propio programa taskmaster, lo mataremos y veremos si la salida es
+limpia, y usaremos SIGHUP como disparador del hotreload.
+
+ps aux | grep taskmaster
+
+Teniendo el pid
+
+kill -HUP pid
+kill pid (manda sigterm por defecto)
+
+
+[09/08/2026-19:08:00] [ INFO ] - Application: SIGHUP received, reloading config
+[09/08/2026-19:08:00] [ INFO ] - Application: reload: unchanged sleeper
+[09/08/2026-19:08:45] [ INFO ] - Application: Shutdown signal received, quitting
+[09/08/2026-19:08:45] [ INFO ] - Application: Sent TERM to sleeper
+[09/08/2026-19:08:45] [ INFO ] - Application: sleeper killed by signal 15
