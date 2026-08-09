@@ -1596,3 +1596,59 @@ config reloaded
 taskmaster> status
 sleeper    RUNNING    pid 102845
 newcomer    RUNNING    pid 102927
+
+- Test 10: quitar un programa con el reload.
+
+Esta prueba sera la contraria, inicializaremos dos procesos y eliminaremos uno de la configuracion, despues 
+recargaremos, el problema anadido es que usaremops un proceso que ignora SIGTERM
+
+programs:
+
+  sleeper:
+    cmd: "/bin/sleep 1000000"
+    autostart: true
+    autorestart: unexpected
+    starttime: 2
+    stopsignal: TERM
+    stoptime: 5
+    stdout: ./logs/sleeper.stdout
+    stderr: ./logs/sleeper.stderr
+
+  stubborn:
+    cmd: "./test/stubborn.sh"
+    autostart: true
+    autorestart: never
+    starttime: 2
+    stopsignal: TERM
+    stoptime: 3
+    stdout: ./logs/stubborn.stdout
+    stderr: ./logs/stubborn.stderr
+
+taskmaster> status
+sleeper    RUNNING    pid 107773
+stubborn    RUNNING    pid 107774
+
+taskmaster> reload
+config reloaded
+taskmaster> status
+sleeper    RUNNING    pid 107773
+stubborn    STOPPING
+
+taskmaster> status
+sleeper    RUNNING    pid 107773
+
+Si mirtamos el estatus rapido vemos como esta en espera de terminarlo con SIGKILL.
+En los logs se ve mas detallado.
+
+[09/08/2026-20:33:16] [ INFO ] - Application: Taskmaster is running
+[09/08/2026-20:33:16] [ INFO ] - Application: The config file is test/10_reload_remove_before.yml
+[09/08/2026-20:33:16] [ INFO ] - Application: Started sleeper (pid 107773)
+[09/08/2026-20:33:16] [ INFO ] - Application: Started stubborn (pid 107774)
+[09/08/2026-20:33:18] [ INFO ] - Application: sleeper running
+[09/08/2026-20:33:18] [ INFO ] - Application: stubborn running
+[09/08/2026-20:33:38] [ INFO ] - Application: reload command received
+[09/08/2026-20:33:38] [ INFO ] - Application: reload: unchanged sleeper
+[09/08/2026-20:33:38] [ INFO ] - Application: reload: removing stubborn
+[09/08/2026-20:33:41] [ WARNING ] - Application: stubborn did not stop in time, sending SIGKILL
+[09/08/2026-20:33:41] [ INFO ] - Application: stubborn killed by signal 9
+[09/08/2026-20:33:41] [ INFO ] - Application: reload: removed stubborn
