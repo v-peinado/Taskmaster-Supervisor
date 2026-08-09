@@ -1652,3 +1652,38 @@ En los logs se ve mas detallado.
 [09/08/2026-20:33:41] [ WARNING ] - Application: stubborn did not stop in time, sending SIGKILL
 [09/08/2026-20:33:41] [ INFO ] - Application: stubborn killed by signal 9
 [09/08/2026-20:33:41] [ INFO ] - Application: reload: removed stubborn
+
+- Test 11: modificar un programa con el reload.
+
+Usaremos el arcvhivo de configuracion anterior, modificaremos por ejemplo el campo autostart: false, 
+es un caso curioso.
+
+Mi criterio es tratar los procesos cambiados en la configuracion como si fuesen arrancados por primera vez,
+es decir, los campos que afecten a este programa en su primera vez arrancados al ejecutar taskmaster deberia
+afectarlos, en este aspecto he elegido la sencillez por encima del ajuste fino, mas adelante quiza se cambie,
+pero asi de momento cumple.
+
+He detectado que ignora cuando se cambia a false desde true, es decir se arranca con false, funciona, los procesos
+tienen un status stiopped, como apunte stopped significa no inicializado, es estrictamente incorreecto, pero
+por simplicidad lo asumimos, ademas no capturamos el stado stopped(ctrl + Z), es una limitacion conocida.
+
+Cambiamos a true y hacemos reload, se arrancan.
+
+Volvemos a cambiar a false y reload, NO CAMBIA.
+
+./taskmaster test/10_reload_remove_before.yml
+taskmaster> status 
+sleeper    STOPPED
+stubborn    STOPPED
+
+taskmaster> reload
+config reloaded
+taskmaster> status
+sleeper    RUNNING    pid 116943
+stubborn    RUNNING    pid 116944
+
+taskmaster> reload
+config reloaded
+taskmaster> status
+sleeper    RUNNING    pid 117108
+stubborn    RUNNING    pid 117135
