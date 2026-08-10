@@ -1723,3 +1723,33 @@ vemos que un proceso se ha quedado colgado, esto es porque en ProccessManager::r
 estaba en (s == Program::State::Running || s == Program::State::Starting) lo matabamos, si no, asumiendo qwue solo podia estar stopped
 lanzabamos directamente, ignorando el estado stopping, ahora lo meteremos en ese condicional, pero lo trataremos de otra manera
 ya que esta en procerso de morir no hace falta matarlo solo esperar, el bucle seguira adelante y cuando este stop lo detectara
+
+
+SOLUCIONADO
+
+taskmaster> status
+stubborn    RUNNING    pid 136626
+
+taskmaster> stop stubborn 
+stubborn stopping
+taskmaster> status
+stubborn    STOPPING
+
+taskmaster> reload
+config reloaded
+taskmaster> status
+stubborn    STOPPING
+
+Se ve que aunque hamos reload todavia esta en stopping y no se ha lanzado nada.
+En logs tambien se ve, muere si so si antes de crear el nuevo.
+
+[10/08/2026-18:45:19] [ INFO ] - Application: Taskmaster is running
+[10/08/2026-18:45:19] [ INFO ] - Application: The config file is test/12_reload.yml
+[10/08/2026-18:45:19] [ INFO ] - Application: Started stubborn (pid 136626)
+[10/08/2026-18:45:21] [ INFO ] - Application: stubborn running
+[10/08/2026-18:45:41] [ INFO ] - Application: reload command received
+[10/08/2026-18:45:41] [ INFO ] - Application: reload: restarting stubborn
+[10/08/2026-18:46:04] [ WARNING ] - Application: stubborn did not stop in time, sending SIGKILL
+[10/08/2026-18:46:04] [ INFO ] - Application: stubborn killed by signal 9
+[10/08/2026-18:46:04] [ INFO ] - Application: Started stubborn (pid 136881)
+[10/08/2026-18:46:06] [ INFO ] - Application: stubborn running

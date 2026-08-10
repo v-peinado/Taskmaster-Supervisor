@@ -529,12 +529,15 @@ void ProccessManager::reloadManager(const std::vector<ProgramConfig>& configs) {
             program.setPendingConfig(*incoming);
 
             Program::State s = program.getState();
-            if (s == Program::State::Running || s == Program::State::Starting) {
-                // stop it with its CURRENT signal; the new config is applied on death
-                int sig = signalFromName(current.stopsignal);
+            if (s == Program::State::Running || s == Program::State::Starting || s == Program::State::Stopping) {
                 program.setPendingRestart(incoming->autostart);
-                program.stopping();
-                kill(program.getPid(), sig);
+
+                // if it is already stopping, the signal was already sent
+                if (s != Program::State::Stopping) {
+                    int sig = signalFromName(current.stopsignal);
+                    program.stopping();
+                    kill(program.getPid(), sig);
+                }
             }
             else {
                 // not running: the new config takes effect right away
