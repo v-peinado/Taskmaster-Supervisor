@@ -1703,3 +1703,23 @@ se debia relanzar sin tener en cuenta que estaba false.
 Y program.applyPendingConfig(); se saca del condicional, se aplica siempre se vaya a relanzar o no, 
 esta false y he cambiado otros cambios se hace en la consola start proceso y se comienza con
 los nuevos parametros
+
+- Test 12: recargar mientras un programa se esta parando.
+
+Esta prueba es com;licada en un escenario real, consiste en lanzar un reload mientras esta todavia
+acabando un programa que terminamos con stop, para que podamos simularlo, obligamos por configuracion 
+a que tarde 30 segundos en parar, el tiempo de stoip time es el que taskmaster esperaria anters de matar definitivamente
+al proceso con sigkill por si se hubiese bloqueado.
+
+stop stubborn → status STOPPING → cambias config → reload → debería esperar al SIGKILL y luego lanzar el nuevo
+
+Pero esto no ocurre, de hecho si fuera de taskmaster
+
+pgrep -af "stubborn.sh|sleep 800"
+133384 /bin/sh ./test/stubborn.sh
+133522 /bin/sleep 800
+
+vemos que un proceso se ha quedado colgado, esto es porque en ProccessManager::reloadManager si el proceso
+estaba en (s == Program::State::Running || s == Program::State::Starting) lo matabamos, si no, asumiendo qwue solo podia estar stopped
+lanzabamos directamente, ignorando el estado stopping, ahora lo meteremos en ese condicional, pero lo trataremos de otra manera
+ya que esta en procerso de morir no hace falta matarlo solo esperar, el bucle seguira adelante y cuando este stop lo detectara
