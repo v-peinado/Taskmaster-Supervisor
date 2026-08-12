@@ -1784,3 +1784,23 @@ cat logs/envtest.stdout | grep -E "STARTED_BY|ANSWER" y se ve la salida que se g
 hay que ver el env del sistema y se comprueba que este no esta afectado.
 
 env | grep -E "STARTED_BY|ANSWER" en la consola y no debe salir nada
+
+- Test 14: varias instancias de un mismo programa.
+
+Un programa con numprocs 3. Se comprueba que aparecen tres programas en el status, con nombres
+distintos (worker_0, worker_1, worker_2) y su propio pid cada uno. Cada instancia es
+independiente: se puede parar o reiniciar una sin tocar las otras.
+
+programs:
+
+  worker:
+    cmd: "/bin/sleep 500"
+    numprocs: 3
+    autostart: true
+    autorestart: unexpected
+    starttime: 2
+    stdout: ./logs/worker.stdout
+    stderr: ./logs/worker.stderr
+
+es un test sencillo, mas adelante, se probaran los casos con hotreload, de momento se crean 
+3 procesos independientes como se espera, 
