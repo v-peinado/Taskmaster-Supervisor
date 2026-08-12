@@ -1753,3 +1753,34 @@ En logs tambien se ve, muere si so si antes de crear el nuevo.
 [10/08/2026-18:46:04] [ INFO ] - Application: stubborn killed by signal 9
 [10/08/2026-18:46:04] [ INFO ] - Application: Started stubborn (pid 136881)
 [10/08/2026-18:46:06] [ INFO ] - Application: stubborn running
+
+- Test 13: variables de entorno.
+
+Un programa que lo unico que hace es imprimir su entorno (el comando env). En el fichero de
+configuracion se le ponen un par de variables y se comprueba que aparecen en su salida, o sea
+que taskmaster se las pasa de verdad al proceso antes de lanzarlo.
+
+Hay que comprobarlo asi, preguntandole al propio programa, porque esas variables solo existen
+dentro de el. Taskmaster las pone despues del fork, ya en el hijo, asi que solo afectan a su
+copia del entorno. El entorno se hereda siemprehacia abajo, de padre a hijo, y lo que el hijo cambie muere con el.
+
+Esto ya se probo en una fase temprana pero no estaba documentado.
+
+programs:
+
+  envtest:
+    cmd: "/usr/bin/env"
+    autostart: true
+    autorestart: never
+    starttime: 0
+    env:
+      STARTED_BY: taskmaster
+      ANSWER: "42"
+    stdout: ./logs/envtest.stdout
+    stderr: ./logs/envtest.stderr
+
+cat logs/envtest.stdout | grep -E "STARTED_BY|ANSWER" y se ve la salida que se genera.
+
+hay que ver el env del sistema y se comprueba que este no esta afectado.
+
+env | grep -E "STARTED_BY|ANSWER" en la consola y no debe salir nada
