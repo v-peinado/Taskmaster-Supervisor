@@ -1804,3 +1804,10 @@ programs:
 
 es un test sencillo, mas adelante, se probaran los casos con hotreload, de momento se crean 
 3 procesos independientes como se espera, 
+
+
+- Test 15: configuraciones invalidas
+programs:
+
+  broken:
+    autorestart: never
