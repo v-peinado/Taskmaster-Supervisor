@@ -1811,3 +1811,19 @@ programs:
 
   broken:
     autorestart: never
+
+- Test 16: El programa debe correr en el directorio que le digas.
+
+programs:
+
+  wdtest:
+    cmd: "/bin/pwd"
+    autostart: true
+    autorestart: never
+    starttime: 0
+    workingdir: /tmp
+    stdout: ./logs/wdtest.stdout
+    stderr: ./logs/wdtest.stderr
+
+Es facil, se debe crear un archivo de salida con el resultado de pwd /tmp, si
+no se gestionase como es debido deberia dar como resultado la carpeta desde la que se lanza taskmaster
