@@ -81,14 +81,8 @@ ProgramConfig Parser::parseProgram(const std::string& name, const YAML::Node& no
     return cfg;
 }
 
-void Parser::expandNumprocs(const ProgramConfig& base, int numprocs,
-                            std::vector<ProgramConfig>& programs) {
-    if (numprocs == 1) {
-        checkDuplicateName(base.name, programs);
-        programs.push_back(base);
-        return;
-    }
-
+void Parser::expandNumprocs(const ProgramConfig& base, int numprocs, std::vector<ProgramConfig>& programs) {
+    // always suffix the index
     for (int i = 0; i < numprocs; i++) {
         ProgramConfig instance = base;
         instance.name = base.name + "_" + std::to_string(i);

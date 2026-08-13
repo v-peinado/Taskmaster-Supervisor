@@ -1873,3 +1873,76 @@ Si cambiamos y anadimos el exitcode 2, solo se lanza la primera vez y como sale 
     exitcodes:
       - 0
       - 2
+
+18 - cambiar el numprocs con el reload
+
+programs:
+  worker:
+    cmd: "/bin/sleep 500"
+    numprocs: 2
+    autostart: true
+    autorestart: unexpected
+    starttime: 2
+    stdout: ./logs/worker.stdout
+    stderr: ./logs/worker.stderr
+
+Detecto un pequeno bug cuando se crean numprocs > 1, se crean con el indice como sufijo _0, _1 ,etc.
+
+taskmaster> status
+worker_0    RUNNING    pid 253113
+worker_1    RUNNING    pid 253114
+worker_2    RUNNING    pid 253169
+
+taskmaster> reload
+config reloaded
+taskmaster> status
+worker    RUNNING    pid 253256
+
+taskmaster> reload
+config reloaded
+taskmaster> status
+worker_0    RUNNING    pid 253341
+worker_1    RUNNING    pid 253342
+
+Si creo numprocs 3 y bajo a 1, no detecta proc_0 como el proceso que ya esta creado, porque cuando es solo
+numproc: 1, que seria la nueva configuracion se crea sin sufijo, al identificar con el nombre, no lo reconoce como el proceso que
+tiene que sobrevivir, se podria modificar el codigo y anadir mas lineas par asolucionarlo, pero la manera mas facil y ademas acorta codigo
+es que siempre sean 1 o 10 lleven sufijo, no es estetico pero es sencillo y eficaz.
+
+taskmaster> status
+worker_0    RUNNING    pid 254264
+worker_1    RUNNING    pid 254265
+worker_2    RUNNING    pid 254266
+
+taskmaster> reload
+config reloaded
+taskmaster> status
+worker_0    RUNNING    pid 254264
+
+taskmaster> reload
+config reloaded
+taskmaster> status
+worker_0    RUNNING    pid 254264
+worker_1    RUNNING    pid 254715
+worker_2    RUNNING    pid 254716
+
+No es adecuado usar el pid para identificar porque cambia cada vez que el programa se relanza y ni siquiera existe
+si el programa todavia no ha arrancado o ya ha muerto, asi que la identidad tiene que ser algo fijo como el nombre, 
+que no cambia aunque el programa muera y se relance muchas veces.
+
+Ademas de eso se comprueba que pasa cuando se cambia a numproc 0.
+
+[13/08/2026-20:10:37] [ INFO ] - Application: reload command received
+[13/08/2026-20:10:37] [ ERROR ] - Application: reload failed, keeping current config: program 'worker': numprocs must be >= 1
+
+Vamos a probar si se crea con numproc 0 desde el principio.
+
+./taskmaster test/15_numprocs_before.yml 
+Fatal error: program 'worker': numprocs must be >= 1
+
+Esta excepcion se captura en diferentes sitios por eso una no deja arrancar y la otra solo loguea el fallo.
+
+Salta la excepcion en el parser y se propaga hasta el main, que la captura y aborta. Aqui es lo
+correcto porque al arrancar no hay nada funcionando que proteger. En el reload no se propaga:
+la capturo antes, dentro del bucle, para que un fichero mal editado no tumbe un daemon que esta
+trabajando.
