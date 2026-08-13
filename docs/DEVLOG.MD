@@ -1946,3 +1946,36 @@ Salta la excepcion en el parser y se propaga hasta el main, que la captura y abo
 correcto porque al arrancar no hay nada funcionando que proteger. En el reload no se propaga:
 la capturo antes, dentro del bucle, para que un fichero mal editado no tumbe un daemon que esta
 trabajando.
+
+- Test 17: intentar provocar nombres duplicados.
+
+
+programs:
+
+  worker:
+    cmd: "/bin/sleep 500"
+    numprocs: 2
+    autostart: true
+    starttime: 2
+    stdout: ./logs/worker.stdout
+    stderr: ./logs/worker.stderr
+
+  worker_0:
+    cmd: "/bin/sleep 600"
+    autostart: true
+    starttime: 2
+    stdout: ./logs/worker0.stdout
+    stderr: ./logs/worker0.stderr
+
+Pongo un programa "worker" con numprocs 2 (que genera worker_0 y worker_1) y ademas otro
+programa llamado "worker_0" a proposito, para ver si chocan. No chocan: como ahora todos los
+nombres llevan sufijo, el segundo se convierte en worker_0_0. Arrancan los tres con nombres
+distintos.
+
+O sea que el cambio de poner siempre el sufijo, ademas de arreglar lo del numprocs, ha cerrado
+la unica via por la que podian salir nombres repetidos: las claves del YAML ya son unicas de por
+si, y al añadirles a todas su numero es imposible que dos acaben llamandose igual. La validacion
+de duplicados se queda como red de seguridad, pero ya no deberia saltar nunca.
+
+## FIN  DE TEST, DE MOMENTO
+copn esto damos por finalizada la bateria de pruebas, de momento.
