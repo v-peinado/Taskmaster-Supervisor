@@ -1827,3 +1827,49 @@ programs:
 
 Es facil, se debe crear un archivo de salida con el resultado de pwd /tmp, si
 no se gestionase como es debido deberia dar como resultado la carpeta desde la que se lanza taskmaster
+
+- Test 17: expected exit codes
+
+Esta prueba hay que hacerla rapido, y ademas verificamos la rotacion de logs de logger, me explico.
+Creamos un script que va a ser nuestro programa.
+
+#!/bin/sh
+exit 2
+
+Basicamente solo sale con codigo 2.
+
+programs:
+
+  codetest:
+    cmd: "./test/exit2.sh"
+    autostart: true
+    autorestart: unexpected
+    exitcodes:
+      - 0
+    starttime: 0
+    stdout: ./logs/codetest.stdout
+    stderr: ./logs/codetest.stderr
+
+
+La configuraciuon por defecto de codigos de salida permitidos es siempre 0(si no se pone nada en config), cualquiero programa que no salga
+con 0 es unexpected, a no ser que ese codigo de salida, se anada a la lista de exitcodes, es decir si queremos 
+que no se reintente si sale con codigo 2 habria que anadirlo.
+
+MUY IMPORTANTE: si se crea lista de exitcodes, el 0 ya no es por defecto, se sobreescribe, asique si queremos que 0 forme parte hay que anadirlo.
+
+mira fragmento de logs, se ve que sale y se relanza indefinidamente.
+[13/08/2026-18:25:18] [ INFO ] - Application: codetest exited, code 2
+[13/08/2026-18:25:18] [ INFO ] - Application: Started codetest (pid 236394)
+[13/08/2026-18:25:18] [ INFO ] - Application: codetest running
+[13/08/2026-18:25:18] [ INFO ] - Application: codetest exited, code 2
+[13/08/2026-18:25:18] [ INFO ] - Application: Started codetest (pid 236395)
+[13/08/2026-18:25:18] [ INFO ] - Application: codetest running
+[13/08/2026-18:25:18] [ INFO ] - Application: codetest exited, code 2
+[13/08/2026-18:25:18] [ INFO ] - Application: Started codetest (pid 236396)
+[13/08/2026-18:25:18] [ INFO ] - Application: codetest running
+
+Si cambiamos y anadimos el exitcode 2, solo se lanza la primera vez y como sale con exitcode permitido no se relanza.
+
+    exitcodes:
+      - 0
+      - 2
