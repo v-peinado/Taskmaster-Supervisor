@@ -2095,3 +2095,46 @@ queda como red de seguridad, pero ya no deberia saltar nunca.
 ## Fin de la bateria de pruebas (de momento)
 
 Con esto damos por finalizada la bateria de pruebas, de momento.
+
+### 2026-08-15
+
+Empiezo el bonus de cliente/servidor. Antes de escribir nada, las decisiones de diseño.
+
+**Dos binarios en vez de uno.** Al principio habia pensado en un solo ejecutable que segun como lo
+llamaras arrancase de servidor o de cliente, pero releyendo el subject deja claro que quiere dos
+programas separados, y ademas es como funciona supervisor (supervisord y supervisorctl). Tiene otra
+ventaja practica: el cliente no necesita el manager, ni el parser, ni yaml-cpp; solo la shell, el
+socket y readline. Separandolos, el cliente queda ligero de verdad y el compilador me valida la
+frontera, porque si compila sin el manager es que no hay dependencias cruzadas.
+
+**Socket UNIX y no TCP.** El subject permite los dos, pero para un programa que va a correr en local
+el UNIX es lo natural, y es lo que usan supervisor, Docker, MySQL o systemd. Ventajas: no pasa por la
+pila de red, no hay que elegir puerto ni interfaz, y los permisos del propio fichero controlan quien
+se puede conectar, sin escribir ninguna autenticacion.
+
+Nunca habia usado sockets UNIX, siempre TCP, y hay una diferencia que me ha sorprendido: el socket
+UNIX se identifica por una ruta y el bind CREA UN FICHERO de verdad ahi. Y ese fichero no se borra
+solo al morir el proceso, se queda huerfano y el siguiente arranque falla con address in use. Asi que
+hay que hacer unlink de la ruta antes del bind (por si quedo de una ejecucion anterior) y tambien al
+salir limpio. Es el mismo tipo de responsabilidad que tengo con los procesos huerfanos: si me matan
+con kill -9 el fichero se queda y lo tiene que limpiar el siguiente arranque.
+
+En lo demas se programa igual que TCP: es un flujo, no mensajes, asi que lo que escribo no llega
+necesariamente en la misma cantidad de lecturas y necesito mi propio buffer para ir acumulando hasta
+tener una linea entera. Exactamente lo mismo que ya hago con los pipes de los hijos.
+
+**La ruta:** /tmp/taskmaster.sock, que es donde lo pone supervisor por defecto. Los daemons de
+sistema lo suelen poner en /var/run, pero eso requiere permisos de root y el subject dice
+explicitamente que mi programa no corre como root, asi que /tmp es lo correcto.
+
+**El protocolo:** texto plano, una linea por comando. Encaja directo con lo que ya tengo, porque la
+Shell ya parsea comandos y las acciones del manager ya devuelven strings. Falta decidir como marca el
+servidor el final de una respuesta que ocupa varias lineas, como el status.
+
+**El orden de trabajo**, por capas y probando cada paso:
+
+1. El servidor abre el socket y acepta conexiones (probando con socat, sin cliente todavia).
+2. El cliente conecta y manda un comando, el servidor lo ejecuta y responde.
+3. La Shell se muda al cliente, con readline (que ademas cubre el line editing y el historial que
+   pide el mandatory).
+4. El attach/detach.
