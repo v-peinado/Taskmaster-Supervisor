@@ -2138,3 +2138,36 @@ servidor el final de una respuesta que ocupa varias lineas, como el status.
 3. La Shell se muda al cliente, con readline (que ademas cubre el line editing y el historial que
    pide el mandatory).
 4. El attach/detach.
+
+### 2026-08-16
+
+Decisiones de arquitectura para la parte del socket.
+
+**Dos clases, no una.** Del lado servidor hay dos responsabilidades distintas: escuchar (crear el
+socket, bind, listen y aceptar conexiones nuevas) y hablar con un cliente concreto (su fd, su buffer
+de linea a medias). La primera es unica y vive toda la ejecucion, la segunda nace y muere con cada
+cliente, y puede haber varias a la vez. Son cosas suficientemente distintas como para separarlas, y
+ademas asi el buffer de cada conexion vive donde le corresponde, dentro de su propia conexion.
+
+**Quien posee que.** Siguiendo el mismo criterio de todo el proyecto:
+
+- El listener posee SU socket de escucha. Lo crea, lo cierra y hace el unlink del fichero. Nada mas.
+  No lleva registro de las conexiones que produce.
+- Cada conexion posee SU fd y SU buffer. Es estado propio suyo e imprescindible, porque el flujo
+  llega partido y hay que ir acumulando hasta tener una linea entera.
+- El Taskmaster posee el listener y la coleccion de conexiones, y decide cuando aceptar, cuando leer
+  y cuando cerrar.
+
+Es el mismo reparto que ya tengo con el EventLoop y el SignalFd: son clases de mecanica que poseen su
+propio recurso del sistema, pero no el estado del dominio ni nada compartido con otras clases. Ojo con
+esto, que me lie al pensarlo: no son clases "sin estado", el listener tiene su fd y la conexion su
+buffer; lo que no tienen es estado compartido. Lo importante no es no tener datos, es que cada dato
+tenga un solo dueño y nadie escriba en el ajeno.
+
+Si el listener guardase las conexiones tendria dos responsabilidades, y el Taskmaster acabaria
+escribiendo en su coleccion desde fuera para cerrarlas, que es justo el acoplamiento de escritura que
+llevo todo el proyecto evitando.
+
+**El accept devuelve un fd crudo, no un objeto conexion.** Asi el listener ni siquiera necesita
+conocer la clase de conexion; entrega el descriptor y quien lo recibe decide que hacer con el. Es lo
+mismo que hace el EventLoop::wait(), que devuelve fds sin saber que significan.
