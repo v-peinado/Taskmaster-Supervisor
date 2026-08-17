@@ -18,3 +18,19 @@ SocketListener::~SocketListener() {
     // pero existe el socket file tambien
     unlink(m_path.c_str());
 }
+
+// Getter
+
+int SocketListener::getFd() const {
+    return m_fd.getFd();
+}
+
+// Setup
+
+Fd SocketListener::createSocket() const {
+    int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
+    if (fd < 0)
+        throw std::runtime_error("socket failed");
+    return Fd(fd);
+}
+

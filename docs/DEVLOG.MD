@@ -2171,3 +2171,21 @@ llevo todo el proyecto evitando.
 **El accept devuelve un fd crudo, no un objeto conexion.** Asi el listener ni siquiera necesita
 conocer la clase de conexion; entrega el descriptor y quien lo recibe decide que hacer con el. Es lo
 mismo que hace el EventLoop::wait(), que devuelve fds sin saber que significan.
+
+
+### 2026-08-15
+
+Empiezo la clase SocketListener, la que se encarga de crear el socket UNIX y aceptar las conexiones
+de los clientes. La voy montando poco a poco y probando cada paso, que es codigo nuevo para mi.
+
+De momento tiene el constructor, el destructor y el createSocket, que solo hace el socket() y lo
+devuelve envuelto en un Fd. El unlink va en el destructor porque el fichero del socket no se borra
+solo al morir el proceso.
+
+Para probarlo he hecho un main aparte que crea el listener e imprime el fd con el getFd. Como el
+constructor llama a los helpers que todavia no he escrito, los he dejado vacios de momento para que
+enlace:
+
+    c++ -std=c++20 -I include /tmp/test_listener.cpp src/SocketListener.cpp src/Fd.cpp -o /tmp/test_listener
+
+Y sale un fd valido, asi que el socket se crea bien.

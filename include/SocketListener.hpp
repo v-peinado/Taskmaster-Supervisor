@@ -13,6 +13,8 @@ class SocketListener {
         SocketListener(SocketListener&&) = delete;
         SocketListener& operator=(SocketListener&&) = delete;
 
+        int getFd() const;
+
     private:
 
         std::string m_path;
