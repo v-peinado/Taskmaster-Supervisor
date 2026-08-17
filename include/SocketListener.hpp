@@ -7,7 +7,7 @@ class SocketListener {
     public:
         SocketListener() = delete;
         ~SocketListener();
-        SocketListener(const std::string&);
+        SocketListener(const std::string& path);
         SocketListener(const SocketListener&) = delete;
         SocketListener& operator=(const SocketListener&) = delete;
         SocketListener(SocketListener&&) = delete;
@@ -17,4 +17,11 @@ class SocketListener {
 
         std::string m_path;
         Fd          m_fd;
+
+        // Setup
+        
+        Fd createSocket() const;
+        void bindSocket() const;
+        void listenSocket() const;
+
 };
