@@ -13,7 +13,13 @@ class SocketListener {
         SocketListener(SocketListener&&) = delete;
         SocketListener& operator=(SocketListener&&) = delete;
 
+        // Not real Getter :)
+
         int getFd() const;
+
+        // Client 
+
+        Fd acceptConnection();
 
     private:
 
