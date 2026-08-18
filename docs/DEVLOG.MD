@@ -2277,3 +2277,21 @@ srwxrwxr-x 1 victor victor 0 ago 18 18:03 /tmp/taskmaster.sock
 ls: cannot access '/tmp/taskmaster.socksock': No such file or directory
 
 Se conecta, ahora lo siguiente es implementar ese fd en epoll.
+
+### 2026-08-18
+
+Se empieza con las decisiones de la clase ClientConnection:
+
+Constructores: seguiremos la rule of five como siempre. Un detalle importante, igual que pasaba
+con los programas: las conexiones viviran en un vector dentro del Taskmaster (seguramente), y dos
+conexiones no deben tener nunca el mismo fd, porque cuando el objeto se destruye la clase Fd hace
+el close, y si hubiera dos duenos del mismo descriptor se cerraria dos veces.
+
+Por eso la copia va borrada, pero el move tiene que estar permitido: hace falta para poder pasar
+la conexion al vector, y ademas porque cuando el vector crece tiene que mover todos sus elementos
+al bloque de memoria nuevo. El move transfiere la propiedad y deja el origen en -1, asi que el
+objeto vaciado no cierra nada al destruirse.
+
+A su vez como miembros, casi al 100% necesitaremos un objeto Fd, que contendra el fd crudo de 
+la conexion, el bufferv propio que almacenara el stream que vaya llegando y en el que se trabajara con los limites
+para delimitar cada mensaje, y flag de seguridad para indicar si esta activo (read devulve 0 si el socket esta cerrado).
