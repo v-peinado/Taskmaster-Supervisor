@@ -2189,3 +2189,91 @@ enlace:
     c++ -std=c++20 -I include /tmp/test_listener.cpp src/SocketListener.cpp src/Fd.cpp -o /tmp/test_listener
 
 Y sale un fd valido, asi que el socket se crea bien.
+
+#include "SocketListener.hpp"
+#include <iostream>
+
+int main() {
+    try {
+        SocketListener listener("/tmp/taskmaster.sock");
+        std::cout << "socet creado, fd = " << listener.getFd() << std::endl;
+        std::cout << "mira con: ls -l /tmp/taskmaster.sock" << std::endl;
+        std::cout << "Enter para salir" << std::endl;
+        std::cin.get();
+    }
+    catch (const std::exception& e) {
+        std::cerr << "fallo: " << e.what() << std::endl;
+        return 1;
+    }
+    std::cout << "salido, fichero .sock no deberia existir ya" << std::endl;
+}
+
+### 2026-08-18
+
+Bien, termionamos la clase, es algo familiar, es creacion y configuracion de socket
+igual a lo que haciamos en tcp pero adaptandolo al nuevo tipo de socket,
+como curiosidad usamos una variante de accept qwuer nos permite agragar en una operacion atomica
+flags para que los hijos no hereden los fd.
+
+El main anterior que usabamos de test unbitario lo vamos a completar:
+
+#include "SocketListener.hpp"
+#include <iostream>
+
+int main() {
+    try {
+        SocketListener listener("/tmp/taskmaster.sock");
+        std::cout << "socket creado, fd = " << listener.getFd() << std::endl;
+        std::cout << "comprueba en otra terminal:" << std::endl;
+        std::cout << "  ls -l /tmp/taskmaster.sock" << std::endl;
+        std::cout << "  socat - UNIX-CONNECT:/tmp/taskmaster.sock" << std::endl;
+        std::cout << "pulsa Enter para aceptar una conexion pendiente" << std::endl;
+        std::cin.get();
+
+        Fd client = listener.acceptConnection();
+        if (client.validFd())
+            std::cout << "cliente aceptado, fd = " << client.getFd() << std::endl;
+        else
+            std::cout << "no habia ninguna conexion esperando" << std::endl;
+
+        std::cout << "pulsa Enter para salir" << std::endl;
+        std::cin.get();
+    }
+    catch (const std::exception& e) {
+        std::cerr << "fallo: " << e.what() << std::endl;
+        return 1;
+    }
+    std::cout << "salido" << std::endl;
+}
+
+c++ -std=c++20 -I include test/test_listener.cpp src/SocketListener.cpp src/Fd.cpp -o test/test_listener
+./test/test_listener
+socket creado, fd = 3
+comprueba en otra terminal:
+  ls -l /tmp/taskmaster.sock
+  nc -U /tmp/taskmaster.sock
+pulsa Enter para aceptar una conexion pendiente
+
+cliente aceptado, fd = 4
+pulsa Enter para salir
+
+salido
+
+Antes de cerra comprobamos:
+ls -l /tmp/taskmaster.socksock
+srwxrwxr-x 1 victor victor 0 ago 18 18:03 /tmp/taskmaster.sock
+
+
+- El socket se crea (fd 3).
+- El bind crea el fichero en /tmp, y se ve con ls que es un socket de verdad por la "s" del
+  principio de los permisos (srwxrwxr-x).
+- El listen funciona: con "nc -U /tmp/taskmaster.sock" el cliente conecta y se queda esperando. Si
+  no estuviese escuchando saldria un connection refused al instante.
+- El acceptConnection recoge esa conexion y devuelve el fd del cliente (fd 4).
+- Al salir del programa el fichero del socket desaparece, o sea que el unlink del destructor
+  funciona. Este es el detalle que era facil de olvidar, porque el fichero no se borra solo.
+
+  ls -l /tmp/taskmaster.socksockck
+ls: cannot access '/tmp/taskmaster.socksock': No such file or directory
+
+Se conecta, ahora lo siguiente es implementar ese fd en epoll.
