@@ -2295,3 +2295,10 @@ objeto vaciado no cierra nada al destruirse.
 A su vez como miembros, casi al 100% necesitaremos un objeto Fd, que contendra el fd crudo de 
 la conexion, el bufferv propio que almacenara el stream que vaya llegando y en el que se trabajara con los limites
 para delimitar cada mensaje, y flag de seguridad para indicar si esta activo (read devulve 0 si el socket esta cerrado).
+
+### 2026-08-18
+
+Implementado el constructor y los dos accesores del ClientConnection. El constructor recibe el Fd
+por valor y lo mueve al miembro, que es como viaja la propiedad cuando el tipo no es copiable. El
+buffer no va en la lista de inicializacion porque el string ya nace vacio por su propio
+constructor, pero el bool si, que los tipos basicos sin inicializar contienen basura.

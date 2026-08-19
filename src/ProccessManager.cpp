@@ -115,8 +115,7 @@ bool ProccessManager::createPipes(int out_pipe[2], int err_pipe[2]) {
     return true;
 }
 
-void ProccessManager::setupParentSide(Program& program, pid_t pid,
-                                      int out_pipe[2], int err_pipe[2]) {
+void ProccessManager::setupParentSide(Program& program, pid_t pid, int out_pipe[2], int err_pipe[2]) {
     const ProgramConfig& cfg = program.getProgramConfig();
 
     close(out_pipe[1]);

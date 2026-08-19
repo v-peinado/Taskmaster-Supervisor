@@ -14,6 +14,11 @@ class ClientConnection {
         ClientConnection(ClientConnection&&) = default;
         ClientConnection& operator=(ClientConnection&&) = default;
 
+        // 
+
+        int getFd() const;
+        bool isClosed() const;
+
     private:
 
         Fd          m_fd;
