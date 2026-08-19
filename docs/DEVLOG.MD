@@ -2314,3 +2314,102 @@ Las nuevas funciones:
 Luego un bucle busca los saltos de linea, que delimitan los mensajes, y retorna los mensajes completos usando su posicion, y dejando los incompletos esperando a recibir mas.
 
 - send() escribe un texto en el socket, insistiendo hasta mandarlo entero. Hace falta el bucle porque write puede escribir menos de lo pedido si el buffer del kernel se llena(este detalle lo desconocia, gracias IA), así que va avanzando con sent hasta cubrir todo el mensaje. Si write falla, marca la conexión como cerrada y sale.
+
+
+Vamos a volver a probar, ampliando el main anterior:
+
+#include "SocketListener.hpp"
+#include "ClientConnection.hpp"
+#include <iostream>
+#include <optional>
+
+int main() {
+    try {
+        SocketListener listener("/tmp/taskmaster.sock");
+        std::cout << "esperando cliente en /tmp/taskmaster.sock" << std::endl;
+        std::cout << "en otra terminal: nc -U /tmp/taskmaster.sock" << std::endl;
+        std::cout << "pulsa Enter cuando hayas conectado" << std::endl;
+        std::cin.get();
+
+        Fd client_fd = listener.acceptConnection();
+        if (!client_fd.validFd()) {
+            std::cout << "no habia ninguna conexion" << std::endl;
+            return 1;
+        }
+
+        ClientConnection conn(std::move(client_fd));
+        std::cout << "cliente aceptado, fd = " << conn.getFd() << std::endl;
+
+        conn.send("bienvenido a taskmaster\n");
+
+        // bucle simple: cada Enter lee lo que haya llegado
+        while (!conn.isClosed()) {
+            std::cout << "pulsa Enter para leer lo que haya llegado" << std::endl;
+            std::cin.get();
+
+            std::vector<std::string> lines = conn.readLines();
+
+            for (const auto& line : lines) {
+                std::cout << "recibido: [" << line << "]" << std::endl;
+                conn.send("eco: " + line + "\n");
+            }
+
+            if (lines.empty())
+                std::cout << "(nada nuevo)" << std::endl;
+        }
+
+        std::cout << "el cliente ha cerrado la conexion" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "fallo: " << e.what() << std::endl;
+        return 1;
+    }
+}
+
+Compilamos, ejecutamos y seguimos las instrucciones, en otra consola conectamos con nc, y comprobamos que se envia y se recibe entre clioente y servidor.
+
+
+Ejemplo: 
+ c++ -std=c++20 -I include test/test_connection.cpp src/SocketListener.cpp src/ClientConnection.cpp src/Fd.cpp -o test/test_connection
+./test/test_connection
+esperando cliente en /tmp/taskmaster.sock
+en otra terminal: nc -U /tmp/taskmaster.sock
+pulsa Enter cuando hayas conectado
+
+cliente aceptado, fd = 4
+pulsa Enter para leer lo que haya llegado
+
+(nada nuevo)
+pulsa Enter para leer lo que haya llegado
+
+recibido: [hola que taL]
+pulsa Enter para leer lo que haya llegado
+
+
+y la otra consola
+
+nc -U /tmp/taskmaster.sock
+bienvenido a taskmaster
+hola que taL
+eco: hola que taL
+
+y si cierro el cliente 
+
+(nada nuevo)
+el cliente ha cerrado la conexion
+
+y si cierro server se cierra cliente
+
+si se fuerza escribir y enter rapido, tambien detecta bien el salto de linea 
+recibido: [u]
+recibido: [o]
+pulsa Enter para leer lo que haya llegado
+
+llega como mensajes diferentes
+
+
+si escribo recibido: [hola\nhola]
+
+interpreta como dos caracteres separados \ n no como el caracter de salto de linea
+
+Este test solo maneja una conexion, todavia no esta anadido en eventloop
