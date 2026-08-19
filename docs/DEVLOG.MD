@@ -2298,7 +2298,19 @@ para delimitar cada mensaje, y flag de seguridad para indicar si esta activo (re
 
 ### 2026-08-18
 
-Implementado el constructor y los dos accesores del ClientConnection. El constructor recibe el Fd
+Implementado el constructor y los dos metodo0s del ClientConnection. El constructor recibe el Fd
 por valor y lo mueve al miembro, que es como viaja la propiedad cuando el tipo no es copiable. El
 buffer no va en la lista de inicializacion porque el string ya nace vacio por su propio
 constructor, pero el bool si, que los tipos basicos sin inicializar contienen basura.
+
+### 2026-08-19
+
+Adaptamos las funciones de otro proyecto a la conexion, en este caso no loguearan aunque la conexion se cierre, esto se delega a la clase que usara a esta, como he 
+sosteniado en otras partes de este proyecto las clases "hijas" (metaforicamente, no hrencia), no logean, solo trabajan, o al menos eso se ha intentado a lo largo del proyecto.
+
+Las nuevas funciones:
+
+- readLines() lee del socket todo lo que haya disponible y devuelve las líneas completas que hayan llegado. El bucle de lectura acumula en m_buffer hasta que read devuelve -1 (EAGAIN, no queda nada por ahora) o 0 ( el cliente desconecta), y ahí  m_closed = true. 
+Luego un bucle busca los saltos de linea, que delimitan los mensajes, y retorna los mensajes completos usando su posicion, y dejando los incompletos esperando a recibir mas.
+
+- send() escribe un texto en el socket, insistiendo hasta mandarlo entero. Hace falta el bucle porque write puede escribir menos de lo pedido si el buffer del kernel se llena(este detalle lo desconocia, gracias IA), así que va avanzando con sent hasta cubrir todo el mensaje. Si write falla, marca la conexión como cerrada y sale.

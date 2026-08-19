@@ -14,10 +14,15 @@ class ClientConnection {
         ClientConnection(ClientConnection&&) = default;
         ClientConnection& operator=(ClientConnection&&) = default;
 
-        // 
+        // Access
 
         int getFd() const;
         bool isClosed() const;
+
+        // Com,unication
+        
+        void send(const std::string& msg);
+        std::vector<std::string> readLines();
 
     private:
 
