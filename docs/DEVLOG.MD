@@ -2413,3 +2413,42 @@ si escribo recibido: [hola\nhola]
 interpreta como dos caracteres separados \ n no como el caracter de salto de linea
 
 Este test solo maneja una conexion, todavia no esta anadido en eventloop
+
+
+### 2026-08-20
+
+Antes de enchufar el socket, recapitulo las decisiones de como se reparte el trabajo entre cliente y
+servidor.
+
+Cuando cree la clase Shell ya lo hice pensando en esto: parsea y devuelve el comando como dato, sin
+ejecutar nada ni saber del manager, para que el dia que montara el cliente se pudiera mudar alli. Y
+ese dia ha llegado. El servidor va a acabar siendo un daemon, asi que no tendra consola: el
+handleCommand que lee de std::cin desaparecera y los comandos solo llegaran por el socket. El
+servidor tratara lo que le llegue del socket igual que trataba lo que le llegaba de la consola.
+
+**Que viaja por el socket.** Ante la duda, replicar supervisor: el cliente manda la peticion como
+texto y el servidor la interpreta. Asi que mando la linea cruda, sin parsear, y el servidor la
+parsea. La alternativa (que el cliente parseara y mandara el Command ya montado) obligaria a
+serializar la estructura para que viajara y a deserializarla al otro lado, complicacion que no
+aporta nada.
+
+Me surgio la duda de si no es un desperdicio mandar al servidor comandos que ni existen, en vez de
+filtrarlos en el cliente. Pero no compensa: el coste real es leer unos bytes de un socket local y
+comparar contra siete strings, a ritmo de alguien tecleando, nada comparado con forkear procesos o
+esperar en epoll. Y sobre todo, si el cliente validara tendria que conocer la lista de comandos del
+servidor, que es informacion del servidor; serian dos sitios que mantener sincronizados y al añadir
+un comando habria que acordarse de tocar los dos. Ademas el servidor tiene que validar igualmente,
+porque cualquiera puede conectarse con un nc y mandar lo que quiera, asi que la validacion del
+cliente seria redundante. El que ejecuta es el que valida; el cliente es un transporte tonto.
+
+**Que hay que separar para reutilizar.** Ahora mismo el handleCommand mezcla tres cosas: leer de
+stdin, ejecutar el comando y responder por consola. Para que el camino del socket pueda aprovechar
+lo que ya existe, hay que sacar dos piezas:
+
+- En la Shell, un parseLine que reciba una linea y devuelva el Command. El readCommand se queda solo
+  con leer de stdin y delega el parseo. Asi el servidor puede parsear una linea venga de donde venga.
+- En el Taskmaster, un executeCommand que reciba el comando ya parseado y DEVUELVA la respuesta como
+  string en vez de imprimirla. El switch se queda en un unico sitio y lo usan los dos caminos.
+
+Con eso, el camino del socket es: linea -> parseLine -> executeCommand -> respuesta -> send. Y el de
+la consola usa las mismas piezas mientras siga existiendo. Cero duplicacion.
