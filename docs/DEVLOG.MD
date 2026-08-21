@@ -2452,3 +2452,13 @@ lo que ya existe, hay que sacar dos piezas:
 
 Con eso, el camino del socket es: linea -> parseLine -> executeCommand -> respuesta -> send. Y el de
 la consola usa las mismas piezas mientras siga existiendo. Cero duplicacion.
+
+### 2026-08-18
+
+Separo en dos lo que antes hacia el readCommand de la Shell, que leia de stdin y ademas parseaba la linea y creaba el command.
+ Ahora el parseLine se encarga solo de trocear (recibe una linea de
+texto y devuelve el Command), y el readCommand se queda solo con leer de stdin, llamando al parseLine para lo demas, esto en un futuro desaparecera, porque al deamonizar ya no se podra leer de stdin.
+
+La Shell ahora hace de consola del servidor, pero mas adelante la consola se muda al cliente y el servidor recibira las lineas por el socket.
+
+Es un paso pequeño, pero debido a razones laborales es lo unico que se puede aportar hoy

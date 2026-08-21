@@ -19,6 +19,7 @@ class Shell {
         Shell& operator=(Shell&&) = delete;
 
         void prompt() const;
+        Command parseLine(const std::string& line) const;
         std::optional<Command> readCommand() const;
         void showResponse(const std::string& text) const;
 
