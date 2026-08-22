@@ -2453,7 +2453,7 @@ lo que ya existe, hay que sacar dos piezas:
 Con eso, el camino del socket es: linea -> parseLine -> executeCommand -> respuesta -> send. Y el de
 la consola usa las mismas piezas mientras siga existiendo. Cero duplicacion.
 
-### 2026-08-18
+### 2026-08-21
 
 Separo en dos lo que antes hacia el readCommand de la Shell, que leia de stdin y ademas parseaba la linea y creaba el command.
  Ahora el parseLine se encarga solo de trocear (recibe una linea de
@@ -2462,3 +2462,15 @@ texto y devuelve el Command), y el readCommand se queda solo con leer de stdin, 
 La Shell ahora hace de consola del servidor, pero mas adelante la consola se muda al cliente y el servidor recibira las lineas por el socket.
 
 Es un paso pequeño, pero debido a razones laborales es lo unico que se puede aportar hoy
+
+
+### 2026-08-22
+Saco el switch de comandos del handleCommand a un executeCommand que recibe el comando y DEVUELVE
+la respuesta en vez de imprimirla. Asi el handleCommand se queda solo con lo de la consola (leer de
+stdin, mostrar, el prompt) y el dia que la quite solo borro esa parte, sin tocar la ejecucion, que
+es la que reutilizara el socket.
+
+De paso el doReload pasa a devolver el resultado. Antes la shell decia siempre "config reloaded"
+aunque hubiese fallado, y el motivo solo iba al log; me di cuenta probando el numprocs 0. Ahora
+devuelve el error y se ve en el momento, que con el cliente importa mas porque solo vera lo que le
+llegue por el socket.

@@ -88,7 +88,7 @@ void Taskmaster::handleSignal() {
     }
     else if (sig == SIGHUP) {
         m_logger.log(Logger::LogLevel::Info, "SIGHUP received, reloading config");
-        doReload();
+        doReload();     // nobody to answer to here, the result goes to the log
     }
 }
 
@@ -106,55 +106,55 @@ void Taskmaster::handleCommand() {
         return;
     }
 
-    switch (parseCommandType(cmd->name)) {
-        case CommandType::Status:
-            m_shell.showResponse(m_proccess_manager.status());
-            break;
-        case CommandType::Start:
-            if (cmd->args.empty())
-                m_shell.showResponse("usage: start <program>");
-            else
-                m_shell.showResponse(m_proccess_manager.startProccess(cmd->args[0]));
-            break;
-        case CommandType::Stop:
-            if (cmd->args.empty())
-                m_shell.showResponse("usage: stop <program>");
-            else
-                m_shell.showResponse(m_proccess_manager.stopProccess(cmd->args[0]));
-            break;
-        case CommandType::Restart:
-            if (cmd->args.empty())
-                m_shell.showResponse("usage: restart <program>");
-            else
-                m_shell.showResponse(m_proccess_manager.restartProccess(cmd->args[0]));
-            break;
-        case CommandType::Reload:
-            m_logger.log(Logger::LogLevel::Info, "reload command received");
-            doReload();
-            m_shell.showResponse("config reloaded");
-            break;
-        case CommandType::Help:
-            m_shell.showResponse(
-                "commands:\n"
-                "  status              show all programs and their state\n"
-                "  start <program>     start a program\n"
-                "  stop <program>      stop a program\n"
-                "  restart <program>   restart a program\n"
-                "  reload              reload the config file\n"
-                "  help                show this help\n"
-                "  quit                exit taskmaster");
-            break;
-        case CommandType::Quit:
-            m_logger.log(Logger::LogLevel::Info, "Quit command received, shutting down");
-            m_shutting_down = true;
-            break;
-        case CommandType::Unknown:
-            m_shell.showResponse("unknown command: " + cmd->name);
-            break;
-    }
+    m_shell.showResponse(executeCommand(*cmd));
 
     if (!m_shutting_down)
         m_shell.prompt();
+}
+
+std::string Taskmaster::executeCommand(const Shell::Command& cmd) {
+    switch (parseCommandType(cmd.name)) {
+        case CommandType::Status:
+            return m_proccess_manager.status();
+
+        case CommandType::Start:
+            if (cmd.args.empty())
+                return "usage: start <program>";
+            return m_proccess_manager.startProccess(cmd.args[0]);
+
+        case CommandType::Stop:
+            if (cmd.args.empty())
+                return "usage: stop <program>";
+            return m_proccess_manager.stopProccess(cmd.args[0]);
+
+        case CommandType::Restart:
+            if (cmd.args.empty())
+                return "usage: restart <program>";
+            return m_proccess_manager.restartProccess(cmd.args[0]);
+
+        case CommandType::Reload:
+            m_logger.log(Logger::LogLevel::Info, "reload command received");
+            return doReload();
+
+        case CommandType::Help:
+            return "commands:\n"
+                   "  status              show all programs and their state\n"
+                   "  start <program>     start a program\n"
+                   "  stop <program>      stop a program\n"
+                   "  restart <program>   restart a program\n"
+                   "  reload              reload the config file\n"
+                   "  help                show this help\n"
+                   "  quit                exit taskmaster";
+
+        case CommandType::Quit:
+            m_logger.log(Logger::LogLevel::Info, "Quit command received, shutting down");
+            m_shutting_down = true;
+            return "shutting down";
+
+        case CommandType::Unknown:
+            return "unknown command: " + cmd.name;
+    }
+    return "";
 }
 
 Taskmaster::CommandType Taskmaster::parseCommandType(const std::string& name) const {
@@ -168,12 +168,14 @@ Taskmaster::CommandType Taskmaster::parseCommandType(const std::string& name) co
     return CommandType::Unknown;
 }
 
-void Taskmaster::doReload() {
+std::string Taskmaster::doReload() {
     try {
         m_proccess_manager.reloadManager(m_parser.loadProgramsConf());
+        return "config reloaded";
     }
     catch (const std::exception& e) {
         m_logger.log(Logger::LogLevel::Error,
             std::string("reload failed, keeping current config: ") + e.what());
+        return std::string("reload failed: ") + e.what();
     }
 }

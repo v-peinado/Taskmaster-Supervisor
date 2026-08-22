@@ -48,7 +48,8 @@ class Taskmaster {
         // Event handlers
         void handleSignal();
         void handleCommand();
-        void doReload();
+        std::string doReload();
+        std::string executeCommand(const Shell::Command& cmd);
 
         // Command parsing
         enum class CommandType {
