@@ -11,7 +11,8 @@ class EventLoop {
             InputAvailable,
             ProcessOutputReady,
             ProcessExited,
-            SocketReadable
+            SocketReadable,
+            ClientMessage
         };
 
         struct Event {

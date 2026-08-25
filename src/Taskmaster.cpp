@@ -62,11 +62,14 @@ void Taskmaster::run() {
                 handleCommand();
             else if (ev.type == EventLoop::EventType::SocketReadable)
                 handleNewConnection();
+            else if (ev.type == EventLoop::EventType::ClientMessage)
+                handleClientMessage(ev.fd);
             else
                 m_proccess_manager.handleEvent(ev);
         }
 
         m_proccess_manager.checkTimers();
+        removeClosedConnections();
 
         if (m_shutting_down && !signals_sent) {
             m_shutdown_start = std::chrono::steady_clock::now();
@@ -123,7 +126,32 @@ void Taskmaster::handleNewConnection() {
         return;
 
     m_logger.log(Logger::LogLevel::Info, "client connected");
+    m_event_loop.add(client_fd.getFd(), EventLoop::EventType::ClientMessage);
     m_connections.emplace_back(std::move(client_fd));
+}
+
+void Taskmaster::handleClientMessage(int fd) {
+    ClientConnection* conn = findConnection(fd);
+    if (!conn)
+        return;
+
+    std::vector<std::string> lines = conn->readLines();
+
+    for (const std::string& line : lines) {
+        Shell::Command cmd = m_shell.parseLine(line);
+        if (cmd.name.empty())
+            continue;
+            
+        m_logger.log(Logger::LogLevel::Log, "client: " + line);
+        conn->send(executeCommand(cmd) + "\n");
+    }
+}
+
+ClientConnection* Taskmaster::findConnection(int fd) {
+    for (auto& conn : m_connections)
+        if (conn.getFd() == fd)
+            return &conn;
+    return nullptr;
 }
 
 std::string Taskmaster::executeCommand(const Shell::Command& cmd) {
@@ -192,4 +220,21 @@ std::string Taskmaster::doReload() {
             std::string("reload failed, keeping current config: ") + e.what());
         return std::string("reload failed: ") + e.what();
     }
+}
+
+void Taskmaster::removeClosedConnections() {
+    // same reason as removeMarkedPrograms: we cannot erase while iterating,
+    // so we keep the survivors in a temporary and swap it in
+    std::vector<ClientConnection> temp;
+
+    for (auto& conn : m_connections) {
+        if (conn.isClosed()) {
+            m_logger.log(Logger::LogLevel::Info, "client disconnected");
+            m_event_loop.remove(conn.getFd());     // before the Fd closes it
+            continue;
+        }
+        temp.push_back(std::move(conn));
+    }
+
+    m_connections = std::move(temp);
 }

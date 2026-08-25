@@ -53,6 +53,9 @@ class Taskmaster {
         void handleSignal();
         void handleCommand();
         void handleNewConnection();
+        void handleClientMessage(int fd);
+        ClientConnection* findConnection(int fd);
+        void removeClosedConnections();
         std::string doReload();
         std::string executeCommand(const Shell::Command& cmd);
 
