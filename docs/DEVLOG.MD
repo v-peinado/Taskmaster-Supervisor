@@ -2487,3 +2487,12 @@ cliente, ni se gestiona la desconexioin.
 [25/08/2026-20:03:04] [ INFO ] - Application: worker_1 running
 [25/08/2026-20:03:04] [ INFO ] - Application: newcomer_0 running
 [25/08/2026-20:03:07] [ INFO ] - Application: client connected
+
+Se implementa leer los comandos y registtralos en log y las dexconexiones.
+Probado con nc: mando status y reload y me llegan las respuestas. En el log se ven los comandos con
+nivel LOG:
+
+[25/08/2026-20:36:36] [ INFO ] - Application: client connected
+[25/08/2026-20:36:39] [ LOG ] - Application: client: status
+[25/08/2026-20:51:23] [ LOG ] - Application: client: reload
+

@@ -141,9 +141,9 @@ void Taskmaster::handleClientMessage(int fd) {
         Shell::Command cmd = m_shell.parseLine(line);
         if (cmd.name.empty())
             continue;
-            
+
         m_logger.log(Logger::LogLevel::Log, "client: " + line);
-        conn->send(executeCommand(cmd) + "\n");
+        conn->send(executeCommand(cmd) + "\n\n");
     }
 }
 
