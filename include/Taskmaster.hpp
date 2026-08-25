@@ -9,6 +9,8 @@
 #include "EventLoop.hpp"
 #include "SignalFd.hpp"
 #include "Shell.hpp"
+#include "SocketListener.hpp"
+#include "ClientConnection.hpp"
 
 class Logger;
 
@@ -44,10 +46,13 @@ class Taskmaster {
         std::vector<ProgramConfig>              m_programs_conf;
         std::chrono::steady_clock::time_point   m_shutdown_start;
         bool                                    m_shutting_down;
+        SocketListener                          m_listener;
+        std::vector<ClientConnection>           m_connections;
 
         // Event handlers
         void handleSignal();
         void handleCommand();
+        void handleNewConnection();
         std::string doReload();
         std::string executeCommand(const Shell::Command& cmd);
 

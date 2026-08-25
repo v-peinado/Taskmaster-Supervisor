@@ -2474,3 +2474,16 @@ De paso el doReload pasa a devolver el resultado. Antes la shell decia siempre "
 aunque hubiese fallado, y el motivo solo iba al log; me di cuenta probando el numprocs 0. Ahora
 devuelve el error y se ve en el momento, que con el cliente importa mas porque solo vera lo que le
 llegue por el socket.
+
+### 2026 - 08-25
+
+El listener ya vive en el Taskmaster y su fd esta registrado en el EventLoop como SocketReadable.
+handleNewConnection acepta la conexion y la guarda en el vector de conexiones.
+Probado con nc: sale el "client connected" en el log. Todavia no lee nada de lo que mande el
+cliente, ni se gestiona la desconexioin.
+
+[25/08/2026-20:03:04] [ INFO ] - Application: sleeper_0 running
+[25/08/2026-20:03:04] [ INFO ] - Application: worker_0 running
+[25/08/2026-20:03:04] [ INFO ] - Application: worker_1 running
+[25/08/2026-20:03:04] [ INFO ] - Application: newcomer_0 running
+[25/08/2026-20:03:07] [ INFO ] - Application: client connected

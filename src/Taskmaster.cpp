@@ -16,9 +16,10 @@ Taskmaster::Taskmaster(const Config& cfg, Logger& logger)
     , m_parser(cfg.config_file)
     , m_event_loop()
     , m_signal_fd()
+    , m_listener("/tmp/taskmaster.sock")
     , m_proccess_manager(logger, m_event_loop)
     , m_shutting_down(false)
-    {}
+{}
 
 // Lifecycle
 
@@ -35,7 +36,8 @@ void Taskmaster::run() {
     bool signals_sent = false;
 
     m_event_loop.add(m_signal_fd.getFd(), EventLoop::EventType::SignalReceived);
-    m_event_loop.add(STDIN_FILENO,        EventLoop::EventType::InputAvailable);
+    m_event_loop.add(STDIN_FILENO, EventLoop::EventType::InputAvailable);
+    m_event_loop.add(m_listener.getFd(),  EventLoop::EventType::SocketReadable);
 
     m_shell.prompt();
 
@@ -58,6 +60,8 @@ void Taskmaster::run() {
                 handleSignal();
             else if (ev.type == EventLoop::EventType::InputAvailable)
                 handleCommand();
+            else if (ev.type == EventLoop::EventType::SocketReadable)
+                handleNewConnection();
             else
                 m_proccess_manager.handleEvent(ev);
         }
@@ -110,6 +114,16 @@ void Taskmaster::handleCommand() {
 
     if (!m_shutting_down)
         m_shell.prompt();
+}
+
+void Taskmaster::handleNewConnection() {
+    Fd client_fd = m_listener.acceptConnection();
+
+    if (!client_fd.validFd())
+        return;
+
+    m_logger.log(Logger::LogLevel::Info, "client connected");
+    m_connections.emplace_back(std::move(client_fd));
 }
 
 std::string Taskmaster::executeCommand(const Shell::Command& cmd) {
