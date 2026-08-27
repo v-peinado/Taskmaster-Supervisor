@@ -4,6 +4,8 @@ bin/
 out/
 secret/
 test/
+logs/
+obj/
 
 # Object files
 *.o
@@ -14,4 +16,5 @@ test/
 
 # IDE
 .vscode/
-.idea/
+.idea/taskmasterd
+taskmasterctl
