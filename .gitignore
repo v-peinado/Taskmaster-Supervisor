@@ -18,3 +18,5 @@ obj/
 .vscode/
 .idea/taskmasterd
 taskmasterctl
+taskmasterd
+taskmasterctl
