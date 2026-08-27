@@ -2496,3 +2496,22 @@ nivel LOG:
 [25/08/2026-20:36:39] [ LOG ] - Application: client: status
 [25/08/2026-20:51:23] [ LOG ] - Application: client: reload
 
+### 2026-08-25
+
+Reorganizo las carpetas antes de empezar el cliente, que es el momento de menor coste. Separo los
+fuentes en common, server y client, tanto en include como en src, y el Makefile pasa a tener dos
+targets: taskmasterd y taskmasterctl.
+
+En common va lo que usan los dos binarios: el Fd, la ClientConnection (el servidor la usa para sus
+clientes y el cliente para su conexion al servidor, es la misma clase) y la Shell. En server queda
+todo lo demas: el manager, el Program, el parser, el EventLoop, las señales, el listener y el
+logger.
+
+Lo interesante de esta division es que el Makefile documenta la frontera. El cliente enlaza solo
+common mas lo suyo, y no lleva el -lyaml-cpp: si algun dia el cliente necesitara esa libreria seria
+señal de que esta arrastrando algo del servidor que no le toca. El compilador me valida la
+separacion.
+
+He usado git mv en vez de mover a mano para que git lo registre como renombrado y no pierda el
+historial de cada archivo. Y los -I apuntan a los tres directorios, asi no he tenido que tocar
+ningun include de los fuentes.
