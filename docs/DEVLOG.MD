@@ -2555,3 +2555,8 @@ leyendo hasta encontrar la linea vacia que marca el final.
 
 Tambien un main de cliente sencillo para probar el flujo: conecta, pide una linea, la manda, lee la
 respuesta y la imprime.
+
+### 2026-08-29
+
+Observo haciendo pruebas que quit cierra programa original no solo cliente, vamos a diferenciar, 
+shitdown cerrara daemon, quit cerrara cliente.

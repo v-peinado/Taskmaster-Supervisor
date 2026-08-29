@@ -90,7 +90,7 @@ bool Taskmaster::shutdownTimedOut() const {
 void Taskmaster::handleSignal() {
     int sig = m_signal_fd.readSignal();
     if (sig == SIGINT || sig == SIGTERM) {
-        m_logger.log(Logger::LogLevel::Info, "Shutdown signal received, quitting");
+        m_logger.log(Logger::LogLevel::Info, "Shutdown signal received, Shutdownting");
         m_shutting_down = true;
     }
     else if (sig == SIGHUP) {
@@ -186,10 +186,11 @@ std::string Taskmaster::executeCommand(const Shell::Command& cmd) {
                    "  restart <program>   restart a program\n"
                    "  reload              reload the config file\n"
                    "  help                show this help\n"
-                   "  quit                exit taskmaster";
+                   "  shutdown            exit taskmaster\n";
+                   "  exit                leave the client (does not stop taskmaster)";
 
-        case CommandType::Quit:
-            m_logger.log(Logger::LogLevel::Info, "Quit command received, shutting down");
+        case CommandType::Shutdown:
+            m_logger.log(Logger::LogLevel::Info, "shutdown command received, shutting down");
             m_shutting_down = true;
             return "shutting down";
 
@@ -200,13 +201,13 @@ std::string Taskmaster::executeCommand(const Shell::Command& cmd) {
 }
 
 Taskmaster::CommandType Taskmaster::parseCommandType(const std::string& name) const {
-    if (name == "status")  return CommandType::Status;
-    if (name == "start")   return CommandType::Start;
-    if (name == "stop")    return CommandType::Stop;
-    if (name == "restart") return CommandType::Restart;
-    if (name == "reload")  return CommandType::Reload;
-    if (name == "help")    return CommandType::Help;
-    if (name == "quit")    return CommandType::Quit;
+    if (name == "status")       return CommandType::Status;
+    if (name == "start")        return CommandType::Start;
+    if (name == "stop")         return CommandType::Stop;
+    if (name == "restart")      return CommandType::Restart;
+    if (name == "reload")       return CommandType::Reload;
+    if (name == "help")         return CommandType::Help;
+    if (name == "shutdown")     return CommandType::Shutdown;
     return CommandType::Unknown;
 }
 
