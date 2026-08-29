@@ -67,7 +67,7 @@ class Taskmaster {
             Restart,
             Reload,
             Help,
-            Quit,
+            Shutdown,
             Unknown
         };
 
