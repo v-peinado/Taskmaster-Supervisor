@@ -2541,3 +2541,17 @@ creados en el server ya que no se hara como en los anteriores que van dentro de 
 
 Como variables al igual que los anteriores tendran su objeto Fd, su flag boolenana para control, y el buffer
 para el mensaje recibido.
+
+### 2026-08-29
+
+Creada la ServerConnection, la clase del cliente para hablar con el servidor. Practicamente es
+copiar y pegar de lo que ya tenia: el bucle de lectura con su buffer y el envio insistiendo hasta
+mandarlo todo son iguales que en la ClientConnection, y el crear el socket es como el del
+SocketListener cambiando el bind y el listen por un connect.
+
+Lo que cambia es poco: el socket va bloqueante porque el cliente es sincrono (manda y espera, no
+tiene nada mas que atender), y en vez de devolver lineas sueltas devuelve la respuesta entera,
+leyendo hasta encontrar la linea vacia que marca el final.
+
+Tambien un main de cliente sencillo para probar el flujo: conecta, pide una linea, la manda, lee la
+respuesta y la imprime.

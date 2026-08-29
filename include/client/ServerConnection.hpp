@@ -13,10 +13,19 @@ class ServerConnection {
         ServerConnection(ServerConnection&&) = delete;
         ServerConnection& operator=(ServerConnection&&) = delete;
 
+        // Communication
+        void        sendCommand(const std::string& line);
+        std::string readResponse();
+
+        // Accessors
+        bool isClosed() const;
+
     private:
 
         Fd          m_fd;
         std::string m_buffer;
         bool        m_closed;
 
+        // Connection setup
+        Fd createConnectedSocket(const std::string& path) const;
 };
