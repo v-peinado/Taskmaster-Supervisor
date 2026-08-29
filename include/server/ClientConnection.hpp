@@ -23,6 +23,7 @@ class ClientConnection {
         
         void send(const std::string& msg);
         std::vector<std::string> readLines();
+        Fd createConnectedSocket(const std::string& path) const;
 
     private:
 

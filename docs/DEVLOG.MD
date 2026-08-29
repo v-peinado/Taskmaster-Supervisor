@@ -2515,3 +2515,18 @@ separacion.
 He usado git mv en vez de mover a mano para que git lo registre como renombrado y no pierda el
 historial de cada archivo. Y los -I apuntan a los tres directorios, asi no he tenido que tocar
 ningun include de los fuentes.
+
+### 2026-08-29
+
+Muevo la ClientConnection de common a server. Al empezar el cliente me di cuenta de que no es una
+clase comun de verdad: el servidor la usa para las conexiones que le entran por el accept, pero el
+cliente necesita crear su socket y conectar, que es logica que el servidor no usa nunca. Meterselo
+habria sido cargar la clase compartida con algo que solo sirve a un lado.
+
+Asi que el cliente tendra su propia clase, ServerConnection (su conexion al servidor), y en common
+se queda solo lo que de verdad comparten los dos: el Fd y la Shell.
+
+Se duplican el readLines y el send, unas 40 lineas. Lo asumo a proposito: lo mas correcto habria
+sido una clase base con el manejo del flujo y que cada lado la usara, pero a estas alturas es
+demasiado cambio. Anoto el precio: si aparece un bug en la lectura o el envio hay que arreglarlo en
+dos sitios.
