@@ -2530,3 +2530,14 @@ Se duplican el readLines y el send, unas 40 lineas. Lo asumo a proposito: lo mas
 sido una clase base con el manejo del flujo y que cada lado la usara, pero a estas alturas es
 demasiado cambio. Anoto el precio: si aparece un bug en la lectura o el envio hay que arreglarlo en
 dos sitios.
+
+### 2026-08-29
+
+Creamos pues una clase para el socket que se conectara al server desde cliente, de momento tendra todos los
+constructores deleted menos el constructor parametrico, y el destructor que estara por defecto.
+
+No necesitara copia y movimiento(de momento y seguramente definitivamente, ya veremos) al contrario de los sockets
+creados en el server ya que no se hara como en los anteriores que van dentro de un vector.
+
+Como variables al igual que los anteriores tendran su objeto Fd, su flag boolenana para control, y el buffer
+para el mensaje recibido.
