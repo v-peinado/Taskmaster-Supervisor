@@ -13,7 +13,6 @@ class Shell {
         Shell& operator=(Shell&&) = delete;
 
         // Interaction
-        void prompt() const;
         std::optional<std::string> readLine() const;
         void showResponse(const std::string& text) const;
 

@@ -12,7 +12,6 @@ Client::Client(const std::string& path)
 
 void Client::run() {
     while (m_running) {
-        m_shell.prompt();
 
         std::optional<std::string> line = m_shell.readLine();
 

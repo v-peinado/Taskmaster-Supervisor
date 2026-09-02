@@ -21,6 +21,7 @@ INC		= -I ./include/common/ -I ./include/server/ -I ./include/client/
 
 #Libraries
 LIBS	= -lyaml-cpp
+CLIENT_LIBS	= -lreadline
 
 #Source files
 SRC_DIR	= src/
@@ -49,7 +50,7 @@ $(SERVER): $(COMMON_OBJ) $(SERVER_OBJ)
 	@printf "$(GREEN)$(SERVER): OK!$(RESET)\n"
 
 $(CLIENT): $(COMMON_OBJ) $(CLIENT_OBJ)
-	@$(CC) $(CFLAGS) $(INC) -o $(CLIENT) $(COMMON_OBJ) $(CLIENT_OBJ)
+	@$(CC) $(CFLAGS) $(INC) -o $(CLIENT) $(COMMON_OBJ) $(CLIENT_OBJ) $(CLIENT_LIBS)
 	@printf "$(GREEN)$(CLIENT): OK!$(RESET)\n"
 
 clean:
