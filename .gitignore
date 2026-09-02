@@ -14,9 +14,14 @@ obj/
 *.a
 *.out
 
-# IDE
-.vscode/
-.idea/taskmasterd
-taskmasterctl
+# Binaries
 taskmasterd
 taskmasterctl
+
+# Local files
+IMPORTANTE.md
+bad.yml
+
+# IDE
+.vscode/
+.idea/
