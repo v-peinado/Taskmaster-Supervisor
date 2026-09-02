@@ -2560,3 +2560,13 @@ respuesta y la imprime.
 
 Observo haciendo pruebas que quit cierra programa original no solo cliente, vamos a diferenciar, 
 shitdown cerrara daemon, quit cerrara cliente.
+
+### 2026-09-2
+
+Saco el parseo de comandos a una clase propia, CommandParser, en server. La Shell hacia dos cosas
+que ya no van juntas: la interfaz de terminal (prompt, leer, mostrar) que se va al cliente, y el
+trocear la linea, que se queda en el servidor porque es quien recibe los comandos del socket.
+
+Y con eso quito la consola del servidor: fuera el handleCommand, el registro de stdin en el
+EventLoop y su rama en el reparto. El servidor ya solo se controla por socket, que es lo que
+buscaba desde el principio. Probado conectando con el cliente y funciona.

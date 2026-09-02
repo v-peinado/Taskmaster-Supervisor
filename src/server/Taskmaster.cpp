@@ -39,8 +39,6 @@ void Taskmaster::run() {
     m_event_loop.add(STDIN_FILENO, EventLoop::EventType::InputAvailable);
     m_event_loop.add(m_listener.getFd(),  EventLoop::EventType::SocketReadable);
 
-    m_shell.prompt();
-
     while (true) {
 
         if (m_shutting_down) {
@@ -58,8 +56,6 @@ void Taskmaster::run() {
         for (const EventLoop::Event& ev : events) {
             if (ev.type == EventLoop::EventType::SignalReceived)
                 handleSignal();
-            else if (ev.type == EventLoop::EventType::InputAvailable)
-                handleCommand();
             else if (ev.type == EventLoop::EventType::SocketReadable)
                 handleNewConnection();
             else if (ev.type == EventLoop::EventType::ClientMessage)
@@ -99,26 +95,6 @@ void Taskmaster::handleSignal() {
     }
 }
 
-void Taskmaster::handleCommand() {
-    std::optional<Shell::Command> cmd = m_shell.readCommand();
-
-    if (!cmd) {                          // EOF (Ctrl-D)
-        m_logger.log(Logger::LogLevel::Info, "EOF received, shutting down");
-        m_shutting_down = true;
-        return;
-    }
-
-    if (cmd->name.empty()) {             // empty line
-        m_shell.prompt();
-        return;
-    }
-
-    m_shell.showResponse(executeCommand(*cmd));
-
-    if (!m_shutting_down)
-        m_shell.prompt();
-}
-
 void Taskmaster::handleNewConnection() {
     Fd client_fd = m_listener.acceptConnection();
 
@@ -138,7 +114,7 @@ void Taskmaster::handleClientMessage(int fd) {
     std::vector<std::string> lines = conn->readLines();
 
     for (const std::string& line : lines) {
-        Shell::Command cmd = m_shell.parseLine(line);
+        CommandParser::Command cmd = m_cmd_parser.parseLine(line);
         if (cmd.name.empty())
             continue;
 
@@ -154,7 +130,7 @@ ClientConnection* Taskmaster::findConnection(int fd) {
     return nullptr;
 }
 
-std::string Taskmaster::executeCommand(const Shell::Command& cmd) {
+std::string Taskmaster::executeCommand(const CommandParser::Command& cmd) {
     switch (parseCommandType(cmd.name)) {
         case CommandType::Status:
             return m_proccess_manager.status();

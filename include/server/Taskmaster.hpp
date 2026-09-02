@@ -8,9 +8,9 @@
 #include "ProccessManager.hpp"
 #include "EventLoop.hpp"
 #include "SignalFd.hpp"
-#include "Shell.hpp"
 #include "SocketListener.hpp"
 #include "ClientConnection.hpp"
+#include "CommandParser.hpp"
 
 class Logger;
 
@@ -39,7 +39,6 @@ class Taskmaster {
         std::string                             m_config_file;
         Logger&                                 m_logger;
         Parser                                  m_parser;
-        Shell                                   m_shell;
         EventLoop                               m_event_loop;
         SignalFd                                m_signal_fd;
         ProccessManager                         m_proccess_manager;
@@ -48,16 +47,16 @@ class Taskmaster {
         bool                                    m_shutting_down;
         SocketListener                          m_listener;
         std::vector<ClientConnection>           m_connections;
+        CommandParser                           m_cmd_parser;
 
         // Event handlers
         void handleSignal();
-        void handleCommand();
         void handleNewConnection();
         void handleClientMessage(int fd);
         ClientConnection* findConnection(int fd);
         void removeClosedConnections();
         std::string doReload();
-        std::string executeCommand(const Shell::Command& cmd);
+        std::string executeCommand(const CommandParser::Command& cmd);
 
         // Command parsing
         enum class CommandType {
