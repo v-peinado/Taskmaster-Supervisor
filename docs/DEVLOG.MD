@@ -2570,3 +2570,20 @@ trocear la linea, que se queda en el servidor porque es quien recibe los comando
 Y con eso quito la consola del servidor: fuera el handleCommand, el registro de stdin en el
 EventLoop y su rama en el reparto. El servidor ya solo se controla por socket, que es lo que
 buscaba desde el principio. Probado conectando con el cliente y funciona.
+
+### 2026-09-2
+
+Este paso es sobre todo mover cosas de sitio y ordenar, mas que escribir codigo nuevo. Lo unico
+nuevo de verdad es la clase Client, que junta la conexion, la Shell y el bucle, y deja el main del
+cliente minimo como el del servidor.
+
+El resto es colocacion. La Shell se muda a client y se queda solo con lo suyo: el parseLine y el
+struct Command se habian ido antes al CommandParser del servidor, asi que aqui solo queda la
+interfaz de terminal, y el readCommand pasa a ser readLine devolviendo la linea cruda, porque el
+cliente no necesita parsear nada, solo mandar lo que escriba el usuario.
+
+Los comandos que maneja el propio cliente (de momento el exit) van en un isLocalCommand aparte, y
+esos ni llegan a salir por el socket.
+
+Con esto cada lado tiene lo que le toca: el cliente la terminal, el servidor el parseo y la
+ejecucion, y en common se queda solo el Fd.

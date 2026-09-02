@@ -1,15 +1,9 @@
 #pragma once
 #include <string>
-#include <vector>
 #include <optional>
 
 class Shell {
     public:
-
-        struct Command {
-            std::string name;
-            std::vector<std::string> args;
-        };
 
         Shell();
         ~Shell() = default;
@@ -18,13 +12,12 @@ class Shell {
         Shell(Shell&&) = delete;
         Shell& operator=(Shell&&) = delete;
 
+        // Interaction
         void prompt() const;
-        Command parseLine(const std::string& line) const;
-        std::optional<Command> readCommand() const;
+        std::optional<std::string> readLine() const;
         void showResponse(const std::string& text) const;
 
     private:
 
         std::string m_prompt;
-        
 };
