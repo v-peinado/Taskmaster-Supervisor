@@ -2587,3 +2587,15 @@ esos ni llegan a salir por el socket.
 
 Con esto cada lado tiene lo que le toca: el cliente la terminal, el servidor el parseo y la
 ejecucion, y en common se queda solo el Fd.
+
+### 2026-09-2
+
+Metida readline en el cliente, que era el ultimo punto del mandatory que me quedaba: line editing e
+historial. El cambio es pequeño porque ya tenia la interaccion aislada en la Shell; solo cambia el
+readLine, que en vez de getline usa readline y guarda la linea en el historial con add_history.
+
+Dos detalles de su API, que es de C: el prompt lo imprime la propia readline (asi que quito la
+llamada al prompt que tenia antes, o salia dos veces), y devuelve un buffer reservado con malloc
+que hay que liberar con free, o se fuga memoria en cada comando.
+
+En el Makefile, el cliente enlaza -lreadline y el servidor -lyaml-cpp, cada uno con lo suyo.
