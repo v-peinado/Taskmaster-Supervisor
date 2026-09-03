@@ -2623,3 +2623,31 @@ tipos: si fueran globales, con nombres tan genericos podrian chocar al enlazar c
 El generador se llama una y otra vez con la misma palabra y devuelve una coincidencia por llamada
 hasta que se acaban. Y solo completo la primera palabra, el comando; para completar tambien
 nombres de programa tendria que pedirle la lista al servidor, porque el cliente no la conoce.
+
+
+### 2026-08-26
+
+Daemonizado el servidor. El codigo lo reciclo de otro proyecto (Matt_daemon), donde ya habia hecho
+la daemonizacion, y lo adapto a taskmaster. Es el patron de siempre: doble fork, setsid y redirigir
+los descriptores estandar a /dev/null.
+
+Lo que quito del original al adaptarlo:
+
+- El requireRoot. Alli el subject pedia que corriera como root; aqui dice justo lo contrario, que
+  el programa no corre como root. Y daemonizar no necesita privilegios: ser daemon (correr en
+  segundo plano, sin terminal) y ser root (tener privilegios) son cosas independientes. Hay
+  muchos daemons de usuario, como el ssh-agent o los servicios de systemd --user.
+
+- El chdir("/"). Este es el unico paso canonico que me salto, y a proposito: mis rutas del config
+  son relativas (./logs, ./test), asi que moverme a la raiz las romperia todas. El motivo original
+  de ese paso es no bloquear el desmontaje del sistema de ficheros donde arrancaste, algo que a
+  taskmaster no le afecta. Si algun dia lo quisiera, la solucion seria resolver las rutas a
+  absolutas en el parser antes de daemonizar, que ademas haria el config mas robusto. Lo dejo
+  anotado.
+
+- El umask(0). Afectaria a los ficheros que crea el propio taskmaster (el log, el socket, las
+  salidas de los programas) y los dejaria con permisos 666 sin motivo. Ademas yo ya aplico el
+  umask configurado de cada programa en el setupChild.
+
+El segundo fork crea un proceso que ya no es lider, no se asocia a ninguna tty, para mayor informacion
+se puede consultar la documentacion del proyecto mattdaemon.

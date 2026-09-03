@@ -1,5 +1,6 @@
 #include "Logger.hpp"
 #include "Taskmaster.hpp"
+#include "Daemonize.hpp"
 #include <memory>
 #include <string>
 #include <unistd.h>
@@ -19,6 +20,8 @@ int main(int argc, char **argv) {
         };
 
         logger = std::make_unique<Logger>(logger_config);
+
+        Daemonize::daemonize(*logger);
 
         Taskmaster::Config taskmaster_config {.config_file = argv[1]};
         Taskmaster taskmaster(taskmaster_config, *logger);
