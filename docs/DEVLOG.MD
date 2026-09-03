@@ -2609,3 +2609,17 @@ color del prompt del cliente: dos sitios distintos decidiendo presentacion.
 Ahora el servidor manda texto plano y el cliente colorea al mostrar, buscando las palabras de
 estado. Es lo correcto porque la presentacion es del que muestra, no del que responde: si algun
 dia el cliente redirige su salida a un fichero, el fichero no se llena de codigos de color.
+
+### 2026-09-3
+
+Ya esta el autocompletado.
+
+Funciona registrando una funcion propia que readline llama cuando el usuario pulsa Tab. La API es
+de C y va por punteros a funcion, asi que no pueden ser metodos de la clase (llevarian el this
+implicito). Las dejo como funciones libres dentro de un namespace anonimo, que en C++ es la forma
+de decir "esto es privado de este fichero", equivalente al static de C pero valido tambien para
+tipos: si fueran globales, con nombres tan genericos podrian chocar al enlazar con otro fichero.
+
+El generador se llama una y otra vez con la misma palabra y devuelve una coincidencia por llamada
+hasta que se acaban. Y solo completo la primera palabra, el comando; para completar tambien
+nombres de programa tendria que pedirle la lista al servidor, porque el cliente no la conoce.

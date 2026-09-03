@@ -4,14 +4,46 @@
 #include <iostream>
 #include <cstdlib>
 
+namespace {
+
+    const char* const g_commands[] = {
+        "status", "start", "stop", "restart", "reload", "quit", "help", "exit", nullptr
+    };
+
+    // readline calls this repeatedly: state is 0 on the first call for a given
+    // word, then non zero. We return one match per call and nullptr when done.
+    char* commandGenerator(const char* text, int state) {
+        static int index;
+        static size_t len;
+
+        if (state == 0) {
+            index = 0;
+            len = strlen(text);
+        }
+
+        while (g_commands[index]) {
+            const char* name = g_commands[index];
+            index++;
+            if (strncmp(name, text, len) == 0)
+                return strdup(name);      // readline frees this
+        }
+        return nullptr;
+    }
+
+    char** commandCompletion(const char* text, int start, int) {
+        // only complete the first word: the command itself
+        if (start != 0)
+            return nullptr;
+        return rl_completion_matches(text, commandGenerator);
+    }
+}
+
 // Constructor
 
-Shell::Shell()
-    // \001 and \002 mark the non printing bytes, otherwise readline counts the
-    // colour codes as visible characters and the cursor goes out of place
-    : m_prompt("\001\033[36m\002taskmaster> \001\033[0m\002")
-    {}
-
+Shell::Shell() : m_prompt("\001\033[36m\002taskmaster> \001\033[0m\002")
+{
+    rl_attempted_completion_function = commandCompletion;
+}
 // Interaction
 
 std::optional<std::string> Shell::readLine() const {
