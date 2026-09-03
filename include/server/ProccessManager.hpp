@@ -80,11 +80,11 @@ class ProccessManager {
 
         // State names table
         static constexpr std::array<std::string_view, 6> m_state_names {
-            "\033[33mSTOPPED\033[0m",
-            "\033[33mSTARTING\033[0m",
-            "\033[32mRUNNING\033[0m",
-            "\033[33mEXITED\033[0m",
-            "\033[31mFATAL\033[0m",
-            "\033[36mSTOPPING\033[0m"
+            "STOPPED",
+            "STARTING",
+            "RUNNING",
+            "EXITED",
+            "FATAL",
+            "STOPPING"
         };
 };

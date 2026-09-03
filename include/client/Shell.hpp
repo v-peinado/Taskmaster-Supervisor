@@ -19,4 +19,8 @@ class Shell {
     private:
 
         std::string m_prompt;
+
+        // Colouring
+        void colourStates(std::string& text) const;
+        void replaceAll(std::string& text, const std::string& from, const std::string& to) const;
 };

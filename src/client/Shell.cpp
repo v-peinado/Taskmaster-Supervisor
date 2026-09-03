@@ -30,6 +30,31 @@ std::optional<std::string> Shell::readLine() const {
 }
 
 void Shell::showResponse(const std::string& text) const {
-    if (!text.empty())
-        std::cout << text;
+    if (text.empty())
+        return;
+
+    std::string out = text;
+    colourStates(out);
+    std::cout << out;
+}
+
+// Colouring
+
+void Shell::colourStates(std::string& text) const {
+    replaceAll(text, "RUNNING",  "\033[32mRUNNING\033[0m");
+    replaceAll(text, "FATAL",    "\033[31mFATAL\033[0m");
+    replaceAll(text, "STOPPING", "\033[36mSTOPPING\033[0m");
+    replaceAll(text, "STARTING", "\033[33mSTARTING\033[0m");
+    replaceAll(text, "STOPPED",  "\033[33mSTOPPED\033[0m");
+    replaceAll(text, "EXITED",   "\033[33mEXITED\033[0m");
+}
+
+void Shell::replaceAll(std::string& text, const std::string& from,
+                       const std::string& to) const {
+    size_t pos = 0;
+
+    while ((pos = text.find(from, pos)) != std::string::npos) {
+        text.replace(pos, from.size(), to);
+        pos += to.size();
+    }
 }

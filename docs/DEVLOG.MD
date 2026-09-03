@@ -2599,3 +2599,13 @@ llamada al prompt que tenia antes, o salia dos veces), y devuelve un buffer rese
 que hay que liberar con free, o se fuga memoria en cada comando.
 
 En el Makefile, el cliente enlaza -lreadline y el servidor -lyaml-cpp, cada uno con lo suyo.
+
+### 2026-09-3
+
+Muevo el coloreado del servidor al cliente. Tenia los codigos ANSI metidos en la tabla de estados
+del manager, que era un apaño que ya habia documentado como pendiente, y ademas convivian con el
+color del prompt del cliente: dos sitios distintos decidiendo presentacion.
+
+Ahora el servidor manda texto plano y el cliente colorea al mostrar, buscando las palabras de
+estado. Es lo correcto porque la presentacion es del que muestra, no del que responde: si algun
+dia el cliente redirige su salida a un fichero, el fichero no se llena de codigos de color.
