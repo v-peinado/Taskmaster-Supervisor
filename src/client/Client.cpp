@@ -29,6 +29,9 @@ void Client::run() {
         m_conn.sendCommand(*line);
         m_shell.showResponse(m_conn.readResponse());
 
+        if (*line == "shutdown")
+            m_running = false;
+
         if (m_conn.isClosed()) {
             std::cerr << "connection closed by server" << std::endl;
             m_running = false;

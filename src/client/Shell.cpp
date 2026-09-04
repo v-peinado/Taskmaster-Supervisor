@@ -7,7 +7,7 @@
 namespace {
 
     const char* const g_commands[] = {
-        "status", "start", "stop", "restart", "reload", "quit", "help", "exit", nullptr
+        "status", "start", "stop", "restart", "reload", "shutdown", "help", "exit", nullptr
     };
 
     // readline calls this repeatedly: state is 0 on the first call for a given
