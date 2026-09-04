@@ -8,7 +8,6 @@ class EventLoop {
 
         enum class EventType {
             SignalReceived,
-            InputAvailable,
             ProcessOutputReady,
             ProcessExited,
             SocketReadable,

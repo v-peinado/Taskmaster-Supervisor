@@ -36,7 +36,6 @@ void Taskmaster::run() {
     bool signals_sent = false;
 
     m_event_loop.add(m_signal_fd.getFd(), EventLoop::EventType::SignalReceived);
-    m_event_loop.add(STDIN_FILENO, EventLoop::EventType::InputAvailable);
     m_event_loop.add(m_listener.getFd(),  EventLoop::EventType::SocketReadable);
 
     while (true) {

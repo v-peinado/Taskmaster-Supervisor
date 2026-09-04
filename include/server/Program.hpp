@@ -57,7 +57,6 @@ class Program {
         int   getPidFd() const;
         bool  isPendingRestart() const;
         bool  isPendingRemoval() const;
-        bool  hasPendingConfig() const;
 
         // Timing windows
         bool startWindowPassed() const;

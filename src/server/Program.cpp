@@ -99,8 +99,6 @@ bool Program::isPendingRestart() const { return m_pending_restart; }
 
 bool Program::isPendingRemoval() const { return m_pending_removal; }
 
-bool Program::hasPendingConfig() const { return m_has_pending_config; }
-
 // Timing windows
 
 bool Program::startWindowPassed() const {

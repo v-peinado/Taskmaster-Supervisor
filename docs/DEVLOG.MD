@@ -2659,3 +2659,5 @@ Añadido syslog al Logger, en paralelo al fichero: sigo escribiendo mi log con m
 rotacion, y ademas mando cada mensaje al registro del sistema. Va desactivado por defecto en el
 Config, asi que si reutilizo el Logger en otro proyecto se comporta igual que antes; quien lo
 quiera lo activa.
+
+Se realiza limpieza de codigo muerto al ccrear el cliente y mover parte de la logica a el.
