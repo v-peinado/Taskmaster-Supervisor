@@ -1,11 +1,11 @@
 #include "Logger.hpp"
-//#include "../include/Logger.hpp"
 #include <ctime>
 #include <chrono>
 #include <stdexcept>
 #include <vector>
 #include <fstream>
 #include <filesystem>
+#include <syslog.h>
 
 // Logger - Constructors/Destructors                         
 
@@ -15,13 +15,22 @@ Logger::Logger(const Config& cfg)
     , m_application_name(cfg.application_name)
     , m_max_size(cfg.max_size)
     , m_max_age_days(cfg.max_age_days)
+    , m_use_syslog(cfg.use_syslog )
 {
+    if (m_use_syslog)
+        openlog(m_application_name.c_str(), LOG_PID, LOG_DAEMON);
+
     std::filesystem::create_directories(m_log_dir);
 
     m_file.open(m_log_dir / m_log_file, std::ios::out | std::ios::app);
 
     if (!m_file.is_open())
         throw std::runtime_error("Cannot open log file");
+}
+
+Logger::~Logger() {
+    if (m_use_syslog)
+        closelog();
 }
 
 // Logger - Public methods     
@@ -40,6 +49,9 @@ void Logger::log(LogLevel level, const std::string& msg) {
            << ": "
            << msg
            << std::endl;
+    
+    if (m_use_syslog)
+        syslog(m_syslog_levels[static_cast<int>(level)], "%s", msg.c_str());
 }
 
 bool Logger::isOpen() const {
@@ -64,7 +76,6 @@ std::string Logger::getCurrentTime() const {
 std::string Logger::levelToString(LogLevel level) const {
     return std::string(m_lvl_names[static_cast<int>(level)]);
 }
-
 
 // Advanced Log Archival
 

@@ -17,6 +17,8 @@ int main(int argc, char **argv) {
         Logger::Config logger_config {
             .log_dir = "./logs/",
             .log_file = "app.log",
+            .application_name = "taskmaster",
+            .use_syslog = true,
         };
 
         logger = std::make_unique<Logger>(logger_config);

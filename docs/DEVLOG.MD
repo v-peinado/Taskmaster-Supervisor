@@ -2625,7 +2625,7 @@ hasta que se acaban. Y solo completo la primera palabra, el comando; para comple
 nombres de programa tendria que pedirle la lista al servidor, porque el cliente no la conoce.
 
 
-### 2026-08-26
+### 2026-09-03
 
 Daemonizado el servidor. El codigo lo reciclo de otro proyecto (Matt_daemon), donde ya habia hecho
 la daemonizacion, y lo adapto a taskmaster. Es el patron de siempre: doble fork, setsid y redirigir
@@ -2651,3 +2651,11 @@ Lo que quito del original al adaptarlo:
 
 El segundo fork crea un proceso que ya no es lider, no se asocia a ninguna tty, para mayor informacion
 se puede consultar la documentacion del proyecto mattdaemon.
+
+
+### 2026-09-04
+
+Añadido syslog al Logger, en paralelo al fichero: sigo escribiendo mi log con mi formato y mi
+rotacion, y ademas mando cada mensaje al registro del sistema. Va desactivado por defecto en el
+Config, asi que si reutilizo el Logger en otro proyecto se comporta igual que antes; quien lo
+quiera lo activa.

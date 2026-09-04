@@ -4,6 +4,7 @@
 #include <array>
 #include <vector>
 #include <filesystem>
+#include <syslog.h>
 
 class Logger {
     public:
@@ -14,6 +15,8 @@ class Logger {
             std::string application_name = "Application";
             std::size_t max_size = 10 * 1024 * 1024; // 10mb
             int max_age_days = 30;
+            bool use_syslog = false;
+
         };
 
         Logger(const Config& cfg);
@@ -22,7 +25,7 @@ class Logger {
         Logger& operator=(const Logger&) = delete;
         Logger(Logger&&) = delete;
         Logger& operator=(Logger&&) = delete;
-        ~Logger() = default;
+        ~Logger();
 
         enum class LogLevel {
             Info,           // System lifecycle events
@@ -42,8 +45,10 @@ class Logger {
         std::size_t             m_max_size;
         int                     m_max_age_days;
         std::ofstream           m_file;
+        bool                    m_use_syslog;
 
         static constexpr std::array<const char*, 4> m_lvl_names {"[ INFO ]", "[ LOG ]", "[ WARNING ]", "[ ERROR ]"};
+        static constexpr std::array<int, 4> m_syslog_levels {LOG_INFO, LOG_NOTICE, LOG_WARNING, LOG_ERR};
 
         std::string getCurrentTime() const;
         std::string levelToString(LogLevel level) const;
@@ -57,4 +62,5 @@ class Logger {
         std::vector<std::string> findLogFiles() const;
         std::size_t getFileSize(const std::string& filepath) const;
         [[nodiscard]] int getFileAgeDays(const std::string& filepath) const;
+
 };
